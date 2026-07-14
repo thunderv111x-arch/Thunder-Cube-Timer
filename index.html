@@ -5,7 +5,7 @@
 <title>Rubik's Cube Timer</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="theme-color" content="#05050f">
-<meta name="description" content="ตัวจับเวลาลูกบาศก์รูบิค พร้อม scramble, สถิติ, session และรองรับ GAN Smart Timer">
+<meta name="description" content="ตัวจับเวลาลูกบาศก์รูบิค พร้อม scramble, สถิติ, session และรองรับ GAN & QiYi Smart Timer">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
@@ -420,7 +420,7 @@
 </label>
 
 <div id="btSection">
-  <button id="btConnectBtn">🔗 เชื่อมต่อ Bluetooth Timer (Smart Timer)</button>
+  <button id="btConnectBtn">🔗 เชื่อมต่อ Bluetooth Timer (GAN / QiYi)</button>
   <div id="btStatus">ยังไม่ได้เชื่อมต่อ</div>
 </div>
 
@@ -499,6 +499,7 @@ function generatePyraminxScramble(){
   const faces = ['U','L','R','B'];
   const mods = ['', "'"];
   let moves = generateSimpleScramble(faces, mods, 10).split(' ');
+  // tips (แต่ละมุมมีโอกาสหมุนหรือไม่หมุน)
   ['u','l','r','b'].forEach(tip => {
     if(Math.random() < 0.7){
       const mod = mods[Math.floor(Math.random()*mods.length)];
@@ -562,7 +563,9 @@ function scrambleToFacelets(scrambleStr){
   let s = solvedFacelets();
   scrambleStr.trim().split(/\s+/).forEach(mv => {
     if(!mv) return;
-    s = applyPerm(s, getMovePerm(mv));
+    if(CUBE_BASE_MOVES[mv[0]]) {
+      s = applyPerm(s, getMovePerm(mv));
+    }
   });
   return s;
 }
@@ -574,9 +577,10 @@ const FACE_COLOR = {
 function renderCubeNet(scrambleStr){
   const facelets = scrambleToFacelets(scrambleStr);
   const idx = { U:0, R:9, F:18, D:27, L:36, B:45 };
-  const S = 22;
+  const S = 22; // sticker size
   const gap = 2;
   const faceW = S*3 + gap*2;
+
   const layout = { U:[1,0], L:[0,1], F:[1,1], R:[2,1], B:[3,1], D:[1,2] };
   const totalW = faceW*4 + 20*3;
   const totalH = faceW*3 + 20*2;
@@ -619,6 +623,7 @@ function newScramble(){
   renderPuzzlePreview(type, currentScramble);
 }
 
+// ---------- Seeded PRNG ----------
 function hashSeed(str){
   let h = 1779033703 ^ str.length;
   for(let i=0;i<str.length;i++){
@@ -633,6 +638,7 @@ function hashSeed(str){
   };
 }
 
+// ---------- Puzzle preview router ----------
 function renderPuzzlePreview(type, scrambleStr){
   if(type === '3x3'){
     renderCubeNet(scrambleStr);
@@ -798,20 +804,20 @@ function renderSkewbNet(scrambleStr){
 // ---------- Timer logic ----------
 const display = document.getElementById('timerDisplay');
 const inspectionToggle = document.getElementById('inspectionToggle');
-let state = 'idle';
+let state = 'idle'; // idle -> holding -> ready -> (inspecting) -> running
 let holdOrigin = null;
 let holdTimeout = null;
 let startTime = 0;
 let rafId = null;
-let inspectionEnabled = true;
 
+let inspectionEnabled = true;
 inspectionToggle.addEventListener('change', ()=>{
   inspectionEnabled = inspectionToggle.checked;
 });
 
 let inspectionStart = 0;
 let inspectionRaf = null;
-let pendingPenalty = 0;
+let pendingPenalty = 0; // 0 = ไม่มี, 2 = +2 penalty
 let beepedWarn = false;
 
 function formatTime(ms){
@@ -949,6 +955,7 @@ function pressEnd(){
       startInspection();
       return;
     }
+
     if(origin === 'inspecting'){
       stopInspection();
     }
@@ -996,6 +1003,7 @@ display.addEventListener('contextmenu', (e)=> e.preventDefault());
 // ---------- Sessions & History & stats ----------
 const SESSIONS_KEY = 'rubikTimerSessions';
 const LEGACY_KEY = 'rubikTimerHistory';
+
 let sessionsData = { sessions: {}, currentId: null };
 let times = [];
 
@@ -1242,6 +1250,7 @@ function renderStats(){
   const ao5 = averageOfN(5);
   const ao12 = averageOfN(12);
   const mean = validTimes.length ? average(validTimes) : null;
+
   const fmt = (v) => v === null ? '-' : (v === 'DNF' ? 'DNF' : formatTime(v));
 
   document.getElementById('statBest').textContent = best !== null ? formatTime(best) : '-';
@@ -1279,24 +1288,34 @@ function exportCsv(){
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
 document.getElementById('exportBtn').addEventListener('click', exportCsv);
 
-// ---------- Universal Smart Timer (Bluetooth) ----------
-// ระบบวิเคราะห์โครงสร้างข้อมูลบลูทูธแบบครอบคลุม (GAN / QiYi / Custom Custom-Timer)
+// ---------- Smart Timer (Bluetooth) Protocols ----------
+
+// 1. GAN Smart Timer Specifications
 const GAN_SERVICE_UUID = '0000fff0-0000-1000-8000-00805f9b34fb';
 const GAN_TIMER_STATE_CHAR = '0000fff5-0000-1000-8000-00805f9b34fb';
-const QIYI_SERVICE_UUID = '0000ffd0-0000-1000-8000-00805f9b34fb';
-const QIYI_CHAR_UUID = '0000ffd1-0000-1000-8000-00805f9b34fb';
 
-// ⭐️ เพิ่มคู่ UUID ชุดหลักของคุณที่เจอเบาะแสเข้ามา
-const CUSTOM_SERVICE_UUID = '5833ff01-9b8b-5191-6142-22a4536ef123';
-const CUSTOM_NOTIFY_UUID = '00000002-0000-1001-8001-00805f9b07d0';
+const GAN_STATE = {
+  0x01: 'GET_SET',
+  0x02: 'HANDS_OFF',
+  0x03: 'RUNNING',
+  0x04: 'STOPPED',
+  0x05: 'IDLE',
+  0x06: 'HANDS_ON',
+  0x07: 'FINISHED'
+};
 
-const GAN_STATE = { 0x01: 'GET_SET', 0x02: 'HANDS_OFF', 0x03: 'RUNNING', 0x04: 'STOPPED', 0x05: 'IDLE', 0x06: 'HANDS_ON', 0x07: 'FINISHED' };
+// 2. QiYi Smart Timer (Qy Timer) Specifications
+const QIYI_SERVICE_UUID = '0000ffe0-0000-1000-8000-00805f9b34fb';
+const QIYI_CHARACTERISTIC_UUID = '0000ffe1-0000-1000-8000-00805f9b34fb';
 
 let btDevice = null;
 let btServer = null;
 let btConnected = false;
+let connectedTimerType = null; // 'GAN' หรือ 'QIYI'
+
 const btBtn = document.getElementById('btConnectBtn');
 const btStatus = document.getElementById('btStatus');
 
@@ -1305,6 +1324,7 @@ function setBtStatus(text, cls){
   btStatus.className = cls || '';
 }
 
+// แปรรูปของ GAN Smart Timer packet
 function parseGanTimerPacket(dataView){
   const bytes = new Uint8Array(dataView.buffer);
   if(bytes[0] !== 0xFE) return null;
@@ -1317,12 +1337,62 @@ function parseGanTimerPacket(dataView){
     const seconds = payload[3];
     const msLo = payload[4];
     const msHi = payload[5];
-    recordedMs = minutes*60000 + seconds*1000 + (msLo + msHi*256);
+    const ms = msLo + msHi*256;
+    recordedMs = minutes*60000 + seconds*1000 + ms;
   }
   return { state, recordedMs };
 }
 
-function handleTimerStateChange(stateName, recordedMs){
+// ตัวจัดการเหตุการณ์ GAN
+function handleGanTimerEvent(event){
+  const value = event.target.value;
+  const parsed = parseGanTimerPacket(value);
+  if(!parsed) return;
+  const stateName = GAN_STATE[parsed.state];
+  processTimerState(stateName, parsed.recordedMs);
+}
+
+// ตัวจัดการเหตุการณ์ QiYi (ดึงข้อมูลแบบ Serial / Raw byte stream)
+function handleQiyiTimerEvent(event){
+  const value = event.target.value;
+  const bytes = new Uint8Array(value.buffer);
+  
+  // โครงสร้างแพ็กเก็ตทั่วไปของ QiYi:
+  // [0] = Header (มักเป็น 0x5A หรือตามโปรโตคอลสากล)
+  // [1] = สถานะการสัมผัส/ทำงาน: 
+  //       0x01 = Hands On (วางมือเตรียมพร้อม)
+  //       0x02 = Hands Off (ปล่อยมือ - กำลังจับเวลา)
+  //       0x03 = Stopped / IDLE (หยุดจับเวลาแล้ว)
+  // [2] = นาที (Minutes)
+  // [3] = วินาที (Seconds)
+  // [4-5] = มิลลิวินาที (Milliseconds) 16-bit
+  
+  if (bytes.length < 2) return;
+
+  let stateName = 'IDLE';
+  let recordedMs = null;
+  
+  // แปลงสถานะปุ่ม/การสัมผัสเซนเซอร์ของ QiYi
+  const rawState = bytes[1];
+  if (rawState === 0x01) {
+    stateName = 'HANDS_ON';
+  } else if (rawState === 0x02) {
+    stateName = 'RUNNING';
+  } else if (rawState === 0x03 || rawState === 0x04) {
+    stateName = 'STOPPED';
+    if (bytes.length >= 6) {
+      const minutes = bytes[2];
+      const seconds = bytes[3];
+      const ms = bytes[4] + (bytes[5] << 8);
+      recordedMs = minutes * 60000 + seconds * 1000 + ms;
+    }
+  }
+
+  processTimerState(stateName, recordedMs);
+}
+
+// ฟังก์ชันแกนกลางในการคุมระบบจับเวลาหน้าเว็บด้วยอุปกรณ์ภายนอก
+function processTimerState(stateName, recordedMs){
   switch(stateName){
     case 'HANDS_ON':
       display.classList.remove('go');
@@ -1361,139 +1431,84 @@ function handleTimerStateChange(stateName, recordedMs){
         newScramble();
       }
       break;
+    case 'IDLE':
+      break;
     default:
       break;
   }
 }
 
-function handleGanTimerEvent(event){
-  const value = event.target.value;
-  const parsed = parseGanTimerPacket(value);
-  if(!parsed) return;
-  handleTimerStateChange(GAN_STATE[parsed.state], parsed.recordedMs);
-}
-
-function handleQiYiTimerEvent(event){
-  const value = event.target.value;
-  const bytes = new Uint8Array(value.buffer);
-  const qiyiState = bytes[1];
-  let stateName = 'IDLE';
-  let recordedMs = null;
-  if (qiyiState === 0x02) stateName = 'HANDS_ON';
-  else if (qiyiState === 0x01) stateName = 'HANDS_OFF';
-  else if (qiyiState === 0x03) stateName = 'RUNNING';
-  else if (qiyiState === 0x04) {
-    stateName = 'STOPPED';
-    recordedMs = (bytes[2]||0)*60000 + (bytes[3]||0)*1000 + ((bytes[4]||0) + (bytes[5]||0)*256);
-  }
-  handleTimerStateChange(stateName, recordedMs);
-}
-
-// ฟังก์ชันแปลงสัญญาณสำหรับเครื่องรหัส Custom / แบรนด์ทางเลือก
-function handleCustomTimerEvent(event){
-  const value = event.target.value;
-  const bytes = new Uint8Array(value.buffer);
-  if(bytes.length === 0) return;
-  
-  // โหมดตรวจจับแบบโครงสร้างมาตรฐานทั่วไป (Generic Stream Parser)
-  // ตรวจจับไบต์สถานะ: โดยส่วนใหญ่ byte[0] หรือ byte[1] จะทำหน้าที่ระบุ Action
-  const rawStatus = bytes[0]; 
-  let stateName = 'IDLE';
-  let recordedMs = null;
-
-  // ตรวจจับแพ็กเก็ตการวิ่งและหยุดตามสถาปัตยกรรมทั่วไป
-  if(rawStatus === 0x02 || rawStatus === 0x06) {
-    stateName = 'HANDS_ON';
-  } else if(rawStatus === 0x03) {
-    stateName = 'RUNNING';
-  } else if(rawStatus === 0x04 || rawStatus === 0x05 || bytes.length >= 5) {
-    stateName = 'STOPPED';
-    // ค้นหาแกนเวลาที่ถูกส่งกลับมา (ดึงข้อมูลมิลลิวินาที 3-4 ไบต์หลัง)
-    if(bytes.length >= 4){
-      const m = bytes[1] < 60 ? bytes[1] : 0;
-      const s = bytes[2] < 60 ? bytes[2] : 0;
-      const ms = bytes[3] + (bytes[4] || 0) * 256;
-      recordedMs = m * 60000 + s * 1000 + ms;
-      if(recordedMs <= 0 && bytes.length >= 6){
-        // แฟลชความจำสำรองกรณีส่งแบบ Raw Milliseconds 32-bit
-        recordedMs = bytes[0] + (bytes[1]<<8) + (bytes[2]<<16) + (bytes[3]<<24);
-      }
-    }
-  } else {
-    stateName = 'HANDS_OFF';
-  }
-  
-  // ส่งข้อมูลเข้า Engine จับเวลาหลัก
-  handleTimerStateChange(stateName, (recordedMs && recordedMs < 3600000) ? recordedMs : null);
-}
-
-async function connectSmartTimer(){
+async function connectGanTimer(){
   if(!navigator.bluetooth){
-    setBtStatus('เบราว์เซอร์นี้ไม่รองรับ Web Bluetooth API (แนะนำให้ใช้ Chrome บน Desktop/Android)', 'err');
+    setBtStatus('เบราว์เซอร์นี้ไม่รองรับ Web Bluetooth API (ลองใช้ Chrome บน Desktop/Android)', 'err');
     return;
   }
   try{
-    setBtStatus('กำลังค้นหาตัวจับเวลาบลูทูธที่เปิดสัญญาณอยู่...');
-    
-    // ตั้ง Filter คลุมกลุ่ม UUID เดิมทั้งหมด + UUID ชุดใหม่ของคุณเข้าไป
-    btDevice = await navigator.bluetooth.requestDevice({
-      filters: [
-        { services: [CUSTOM_SERVICE_UUID] },
-        { services: [GAN_SERVICE_UUID] },
-        { services: [QIYI_SERVICE_UUID] },
-        { namePrefix: 'GAN' },
-        { namePrefix: 'QY-' },
-        { namePrefix: 'QIYI' },
-        { namePrefix: 'MoYu' },
-        { namePrefix: 'Timer' },
-        { namePrefix: 'Smart' }
-      ],
-      optionalServices: [CUSTOM_SERVICE_UUID, GAN_SERVICE_UUID, QIYI_SERVICE_UUID]
-    });
+    setBtStatus('กำลังค้นหาอุปกรณ์...');
+    try {
+      btDevice = await navigator.bluetooth.requestDevice({
+        filters: [
+          { namePrefix: 'GAN' },
+          { namePrefix: 'QY' },
+          { namePrefix: 'QIYI' },
+          { namePrefix: 'Timer' },
+          { services: [GAN_SERVICE_UUID] },
+          { services: [QIYI_SERVICE_UUID] }
+        ],
+        optionalServices: [GAN_SERVICE_UUID, QIYI_SERVICE_UUID]
+      });
+    } catch(innerErr) {
+      setBtStatus('กำลังเปิดหาอุปกรณ์ BLE ทั้งหมดรอบตัว...');
+      btDevice = await navigator.bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: [GAN_SERVICE_UUID, QIYI_SERVICE_UUID]
+      });
+    }
 
     btDevice.addEventListener('gattserverdisconnected', () => {
       btConnected = false;
-      btBtn.textContent = '🔗 เชื่อมต่อ Bluetooth Timer (Smart Timer)';
+      connectedTimerType = null;
+      btBtn.textContent = '🔗 เชื่อมต่อ Bluetooth Timer (GAN / QiYi)';
       btBtn.classList.remove('connected');
-      setBtStatus('การเชื่อมต่อถูกตัดแล้ว');
+      setBtStatus('การเชื่อมต่อถูกตัด');
     });
 
-    setBtStatus('เชื่อมต่อเซิร์ฟเวอร์อุปกรณ์...');
+    setBtStatus('กำลังเชื่อมต่อ...');
     btServer = await btDevice.gatt.connect();
-    setBtStatus('กำลังเชื่อมต่อช่องส่งข้อมูล (Characteristic)...');
+
+    // ตรวจหา Service เพื่อระบุยี่ห้อของอุปกรณ์ที่เชื่อมต่อจริง
+    let service;
+    let stateChar;
     
-    let connectedBrand = 'Smart Timer';
-    
-    // วนลูปตรวจสอบว่าเครื่องตอบสนองต่อ Service ตัวไหน
     try {
-      // 1. ลองเชื่อมต่อผ่าน Custom UUID ที่คุณให้มา
-      const service = await btServer.getPrimaryService(CUSTOM_SERVICE_UUID);
-      const notifyChar = await service.getCharacteristic(CUSTOM_NOTIFY_UUID);
-      await notifyChar.startNotifications();
-      notifyChar.addEventListener('characteristicvaluechanged', handleCustomTimerEvent);
-      connectedBrand = 'Custom BLE Timer';
-    } catch(custErr) {
+      // ลองตรวจจับฝั่ง GAN ก่อน
+      service = await btServer.getPrimaryService(GAN_SERVICE_UUID);
+      stateChar = await service.getCharacteristic(GAN_TIMER_STATE_CHAR);
+      connectedTimerType = 'GAN';
+      
+      await stateChar.startNotifications();
+      stateChar.addEventListener('characteristicvaluechanged', handleGanTimerEvent);
+      
+    } catch (e) {
+      // หากไม่ใช่ GAN ให้ลองเชื่อมต่อแบบ QiYi
       try {
-        // 2. ถ้าหลุด ลองผ่าน GAN Service
-        const service = await btServer.getPrimaryService(GAN_SERVICE_UUID);
-        const stateChar = await service.getCharacteristic(GAN_TIMER_STATE_CHAR);
+        service = await btServer.getPrimaryService(QIYI_SERVICE_UUID);
+        stateChar = await service.getCharacteristic(QIYI_CHARACTERISTIC_UUID);
+        connectedTimerType = 'QIYI';
+        
         await stateChar.startNotifications();
-        stateChar.addEventListener('characteristicvaluechanged', handleGanTimerEvent);
-        connectedBrand = 'GAN Timer';
-      } catch(ganErr) {
-        // 3. สุดท้ายลองเช็กแบบ QiYi
-        const service = await btServer.getPrimaryService(QIYI_SERVICE_UUID);
-        const stateChar = await service.getCharacteristic(QIYI_CHAR_UUID);
-        await stateChar.startNotifications();
-        stateChar.addEventListener('characteristicvaluechanged', handleQiYiTimerEvent);
-        connectedBrand = 'QiYi Timer';
+        stateChar.addEventListener('characteristicvaluechanged', handleQiyiTimerEvent);
+        
+      } catch (e2) {
+        throw new Error("ไม่พบ Bluetooth Service ของอุปกรณ์จับเวลาทั้ง GAN และ QiYi ในเครื่องนี้");
       }
     }
 
     btConnected = true;
-    btBtn.textContent = '✅ เชื่อมต่อสำเร็จ: ' + (btDevice.name || connectedBrand);
+    const displayName = btDevice.name || (connectedTimerType === 'QIYI' ? 'QiYi Timer' : 'GAN Timer');
+    btBtn.textContent = '✅ เชื่อมต่อแล้ว: ' + displayName;
     btBtn.classList.add('connected');
-    setBtStatus('เชื่อมต่อเรียบร้อย! ลองวางมือทดสอบความเร็วบนแผงเหล็กตัวจับเวลาได้เลยครับ', 'ok');
+    setBtStatus('พร้อมใช้งาน (' + connectedTimerType + ') — วางมือสองข้างเพื่อเริ่มจับเวลา', 'ok');
   }catch(err){
     console.error(err);
     setBtStatus('เชื่อมต่อไม่สำเร็จ: ' + err.message, 'err');
@@ -1505,7 +1520,7 @@ btBtn.addEventListener('click', async () => {
     btDevice.gatt.disconnect();
     return;
   }
-  await connectSmartTimer();
+  await connectGanTimer();
 });
 
 // ---------- Init ----------
@@ -1516,6 +1531,7 @@ renderHistory();
 renderStats();
 newScramble();
 
+// ---------- PWA: service worker registration ----------
 if('serviceWorker' in navigator){
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js').then(reg => {
@@ -1529,10 +1545,11 @@ if('serviceWorker' in navigator){
         });
       });
     }).catch(err => {
-      console.warn('Service worker ลงทะเบียนไม่สำเร็จ:', err);
+      console.warn('Service worker ลงทะเบียนไม่สำเร็จ (ต้องเปิดผ่าน https หรือ localhost):', err);
     });
   });
 }
+
 </script>
 </body>
 </html>
