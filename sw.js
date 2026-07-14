@@ -53,4 +53,42 @@ self.addEventListener('fetch', (event) => {
       return cached || networkFetch;
     })
   );
+  const CACHE_NAME = 'cube-timer-v1';
+const ASSETS = [
+  './',
+  './index.html', // ปรับเปลี่ยนตรงนี้ให้ตรงกับชื่อไฟล์ HTML หลักของคุณ เช่น ./rubik_timer.html
+];
+
+// ติดตั้ง Service Worker และแคชไฟล์ที่จำเป็น
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(ASSETS);
+    }).then(() => self.skipWaiting())
+  );
+});
+
+// เปิดใช้งานและลบแคชเก่าออก
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys.map((key) => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
+        })
+      );
+    }).then(() => self.clients.claim())
+  );
+});
+
+// ดักจับการเรียกใช้ไฟล์ (Fetch) เพื่อให้ใช้งานออฟไลน์ได้
+self.addEventListener('fetch', (e) => {
+  e.respondWith(
+    caches.match(e.request).then((cachedResponse) => {
+      return cachedResponse || fetch(e.request);
+    })
+  );
+});
 });
