@@ -488,7 +488,7 @@
 <div id="cubeNetWrap"></div>
 
 <div id="timerDisplay">0.00</div>
-<div id="hint">💻 กด <b>Space</b> ค้างไว้ • 📱 แแตะที่ตัวเลขค้างไว้ — จนตัวเลขเปลี่ยนสี แล้วปล่อยเพื่อเริ่มจับเวลา แตะ/กดอีกครั้งเพื่อหยุด</div>
+<div id="hint">💻 กด <b>Space</b> ค้างไว้ • 📱 แตะหน้าปัด<b>ค้างไว้</b> เพื่อเตรียมพร้อม แล้วปล่อยเพื่อเริ่มจับเวลา / แตะ<b>เบาๆ</b> เพื่อหยุด</div>
 
 <div id="quickPenaltyBar">
   <button id="penaltyLastBtn" onclick="togglePenalty(0)">⚠️ +2 (เวลาล่าสุด)</button>
@@ -515,7 +515,7 @@
   </label>
 </div>
 
-<div id="btSection">
+<div id="btSection" style="display:none;">
   <button id="btConnectBtn">🔗 เชื่อมต่อ Bluetooth Timer</button>
   <div id="btStatus">ยังไม่ได้เชื่อมต่อ</div>
 </div>
@@ -878,265 +878,6 @@ function renderSkewbNet(scrambleStr){
 }
 
 
-// ---------- MULTI-TIMER BLUETOOTH DYNAMIC CONFIG ----------
-let btDevice = null;
-let btServer = null;
-let btConnected = false;
-let connectedBrand = null; 
-let lastParsedState = null; 
-
-const btBtn = document.getElementById('btConnectBtn');
-const btStatus = document.getElementById('btStatus');
-
-function setBtStatus(text, cls){
-  btStatus.textContent = text;
-  btStatus.className = cls || '';
-}
-
-function onTimerStatusChanged(timerState, recordedMs) {
-  // กรองกรณีสถานะซ้ำซ้อน
-  if (timerState === lastParsedState && timerState !== 'STOPPED') return;
-  lastParsedState = timerState;
-
-  switch(timerState) {
-    case 'HANDS_ON':
-      display.classList.remove('go', 'inspecting', 'inspect-warn', 'inspect-danger');
-      if(inspectionEnabled){
-        startInspection();
-      } else {
-        display.className = 'ready';
-        display.textContent = '0.00';
-        state = 'ready';
-      }
-      break;
-      
-    case 'RUNNING':
-      if(state === 'inspecting') stopInspection();
-      display.className = 'go';
-      state = 'running';
-      startTime = Date.now();
-      // จำลองให้ตัวเลขหน้าเว็บวิ่งขึ้นพรางๆ ระหว่างรอเครื่องส่งเวลาตอนหยุด
-      cancelAnimationFrame(rafId);
-      tick();
-      break;
-      
-    case 'STOPPED':
-      cancelAnimationFrame(rafId);
-      display.classList.remove('go', 'ready');
-      state = 'idle';
-      
-      if(recordedMs !== null && recordedMs > 0){
-        const penalty = pendingPenalty;
-        pendingPenalty = 0;
-        const total = recordedMs + (penalty === 2 ? 2000 : 0);
-        const isDnf = (penalty === 'DNF');
-        
-        if (isDnf) {
-          display.textContent = 'DNF';
-          saveTime(0, true, 0);
-        } else {
-          display.textContent = formatTime(total) + (penalty === 2 ? ' (+2)' : '');
-          saveTime(total, false, penalty === 2 ? 2 : 0);
-        }
-        newScramble();
-      }
-      break;
-  }
-}
-
-function parseGanTimerPacket(dataView){
-  const bytes = new Uint8Array(dataView.buffer);
-  if(bytes.length < 3) return null;
-  
-  const stateByte = bytes[0]; 
-  let timerState = null;
-  
-  if (stateByte === 0x06 || stateByte === 0x01) timerState = 'HANDS_ON';
-  else if (stateByte === 0x03) timerState = 'RUNNING';
-  else if (stateByte === 0x04 || stateByte === 0x05 || stateByte === 0x07) timerState = 'STOPPED';
-
-  let recordedMs = null;
-  if(timerState === 'STOPPED' && bytes.length >= 6){
-    const minutes = bytes[2] || 0;
-    const seconds = bytes[3] || 0;
-    const msLo = bytes[4] || 0;
-    const msHi = bytes[5] || 0;
-    recordedMs = minutes * 60000 + seconds * 1000 + (msLo + msHi * 256);
-  }
-  return { timerState, recordedMs };
-}
-
-// 🔧 ฟังก์ชันแกะรหัสแพ็กเก็ต QiYi Smart Timer V2 แบบปรับปรุงให้จับสถานะติดชัวร์ 🔧
-function parseQiyiTimerPacket(dataView){
-  const bytes = new Uint8Array(dataView.buffer);
-  if(bytes.length < 1) return null;
-  
-  let timerState = null;
-  
-  // ในเวอร์ชันใหม่ (V2) บอร์ดจะส่งโครงสร้างลักษณะ 0xF1/0xF2 หรือ 0x01/0x02 สลับไปมา
-  // ทำการเช็กทั้งแบบบิตคำสั่งตรง และค่าควบคุมแบบ Byte Mapping
-  const rawStatus = bytes[0];
-  
-  if (rawStatus === 0x01 || rawStatus === 0xF1) {
-    timerState = 'HANDS_ON';
-  } else if (rawStatus === 0x02 || rawStatus === 0xF2) {
-    timerState = 'RUNNING';
-  } else if (rawStatus === 0x03 || rawStatus === 0xF3 || rawStatus === 0x00) {
-    timerState = 'STOPPED';
-  }
-
-  let recordedMs = null;
-  // ดึงตำแหน่งข้อมูลเวลาเฉลี่ย (กรณีเครื่องถูกหยุดเวลาแล้ว)
-  if (bytes.length >= 4) {
-    // บอร์ดรุ่น V2 มักเก็บค่าแบบ: นาที [1], วินาที [2], มิลลิวินาที [3,4] หรือรวมมิลลิวินาที 3 ไบต์ท้าย
-    const min = bytes[1] || 0;
-    const sec = bytes[2] || 0;
-    
-    let ms = 0;
-    if (bytes.length >= 5) {
-      ms = bytes[3] * 256 + bytes[4];
-    } else {
-      ms = bytes[3] || 0;
-    }
-    
-    recordedMs = (min * 60000) + (sec * 1000) + ms;
-    
-    // Fallback ป้องกันเงื่อนไขบิตหยุดค้าง แต่บอร์ดพึ่งส่งค่าเวลาเคลียร์
-    if (timerState === null && recordedMs > 0) {
-      timerState = 'STOPPED';
-    }
-  }
-  
-  return { timerState, recordedMs };
-}
-
-function handleTimerDataNotification(event){
-  const value = event.target.value;
-  let result = null;
-  
-  if (connectedBrand === 'GAN') {
-    result = parseGanTimerPacket(value);
-  } else {
-    // อุปกรณ์ตระกูล QiYi ทั้งหมด (รวมถึง QY-Timer ตัวใหม่)
-    result = parseQiyiTimerPacket(value);
-  }
-  
-  if (result && result.timerState) {
-    onTimerStatusChanged(result.timerState, result.recordedMs);
-  }
-}
-
-async function connectSmartTimer(){
-  if(!navigator.bluetooth){
-    setBtStatus('เบราว์เซอร์นี้ไม่รองรับ Web Bluetooth API (แนะนำให้ใช้ Google Chrome)', 'err');
-    return;
-  }
-  try{
-    setBtStatus('กำลังสแกนหาตัวจับเวลาไร้สาย...');
-    
-    btDevice = await navigator.bluetooth.requestDevice({
-      filters: [
-        { namePrefix: 'GAN' },
-        { namePrefix: 'QIYI' },
-        { namePrefix: 'QY-' },
-        { namePrefix: 'Smart' },
-        { namePrefix: 'Timer' }
-      ],
-      optionalServices: [
-        '5833ff01-9b8b-5191-6142-22a4536ef123', // QiYi Smart Timer V2 Service UUID
-        '6e400001-b5a3-f393-e0a9-e50e24dcca9e', // QiYi V1 Base Service
-        '0000fee7-0000-1000-8000-00805f9b34fb'  // GAN Base Service
-      ]
-    });
-
-    btDevice.addEventListener('gattserverdisconnected', () => {
-      btConnected = false;
-      connectedBrand = null;
-      lastParsedState = null;
-      btBtn.textContent = '🔗 เชื่อมต่อ Bluetooth Timer';
-      btBtn.classList.remove('connected');
-      setBtStatus('การเชื่อมต่อหลุดจากอุปกรณ์แล้ว');
-    });
-
-    setBtStatus('กำลังเชื่อมต่อเซิร์ฟเวอร์อุปกรณ์...');
-    btServer = await btDevice.gatt.connect();
-
-    setBtStatus('กำลังค้นหาบริการและช่องสัญญาณ...');
-    
-    let targetService = null;
-    let targetChar = null;
-
-    // 1. ลองเชื่อมต่อผ่าน UUID บริการตัวจับเวลา QiYi V2 (จากหน้าจอแอป nRF)
-    try {
-      targetService = await btServer.getPrimaryService('5833ff01-9b8b-5191-6142-22a4536ef123');
-      targetChar = await targetService.getCharacteristic('5833ff03-9b8b-5191-6142-22a4536ef123');
-      connectedBrand = 'QIYI';
-      console.log('พบสัญญาณช่องบริการของ QiYi V2 Timer แล้ว!');
-    } catch(e) {
-      console.log('ไม่ใช่ช่องสัญญาณ QiYi V2 กำลังลองช่องสัญญาณแบบอื่น...');
-    }
-
-    // 2. ถ้าไม่พบ ให้กวาดหาระบบแบบเก่า (V1 หรือค่าย GAN)
-    if(!targetChar) {
-      try {
-        if(btDevice.name && (btDevice.name.includes('QIYI') || btDevice.name.includes('QY-'))) {
-          targetService = await btServer.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
-          targetChar = await targetService.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e');
-          connectedBrand = 'QIYI';
-        } else {
-          targetService = await btServer.getPrimaryService('0000fee7-0000-1000-8000-00805f9b34fb');
-          targetChar = await targetService.getCharacteristic('000036f5-0000-1000-8000-00805f9b34fb');
-          connectedBrand = 'GAN';
-        }
-      } catch(e) {
-        // 3. ป้องกันกรณีพิเศษ: ค้นหาช่องสัญญาณ Notify อัตโนมัติจากทุกบริการ
-        const services = await btServer.getPrimaryServices();
-        for(let service of services) {
-          try {
-            const characteristics = await service.getCharacteristics();
-            for(let char of characteristics) {
-              if(char.properties.notify) {
-                targetService = service;
-                targetChar = char;
-                connectedBrand = (btDevice.name && (btDevice.name.includes('GAN'))) ? 'GAN' : 'QIYI';
-                break;
-              }
-            }
-          } catch(err) { continue; }
-          if(targetChar) break;
-        }
-      }
-    }
-
-    if(!targetChar) {
-      throw new Error('ไม่พบช่องสัญญาณรับส่งข้อมูลเวลาอัตโนมัติ (Notify Characteristic)');
-    }
-
-    setBtStatus(`สมัครสมาชิกรับข้อมูลเวลาจาก [${targetChar.uuid.slice(0,8)}]...`);
-    
-    await targetChar.startNotifications();
-    targetChar.addEventListener('characteristicvaluechanged', handleTimerDataNotification);
-
-    btConnected = true;
-    btBtn.textContent = `✅ เชื่อมต่อแล้ว: ${btDevice.name || 'QY Smart Timer V2'}`;
-    btBtn.classList.add('connected');
-    setBtStatus(`เชื่อมต่อเรียบร้อย (${connectedBrand}) — เอามือวางบนเครื่องจับเวลาเพื่อลุยได้เลย!`, 'ok');
-
-  }catch(err){
-    console.error(err);
-    setBtStatus('เชื่อมต่อไม่สำเร็จ: ' + err.message, 'err');
-  }
-}
-
-btBtn.addEventListener('click', async () => {
-  if(btConnected && btDevice && btDevice.gatt.connected){
-    btDevice.gatt.disconnect();
-    return;
-  }
-  await connectSmartTimer();
-});
-
-
 // ---------- Local Storage & Session Systems ----------
 let sessionsData = {
   currentId: "session_1",
@@ -1272,6 +1013,7 @@ let inspectionEnabled = true;
 let inspectionInterval = null;
 let inspectionLeft = 15;
 let pendingPenalty = 0; 
+let blockTouchUntil = 0; // ล็อกหน้าจอกันนิ้วลั่นซ้ำซ้อน
 
 const display = document.getElementById('timerDisplay');
 const insToggle = document.getElementById('inspectionToggle');
@@ -1378,7 +1120,8 @@ function saveTime(ms, isDnf=false, penalty=0){
   speakTime(ms, isDnf, penalty);
 }
 
-// ระบบคีย์บอร์ดสั่งการในสเปซบาร์
+
+// 🕹️ ระบบคีย์บอร์ด (Spacebar) 🕹️
 let spacePressed = false;
 let readyTimeout = null;
 
@@ -1391,8 +1134,10 @@ window.addEventListener('keydown', (e) => {
   spacePressed = true;
 
   if (state === 'running') {
+    // แตะ/กดเบาๆ เพื่อหยุดเวลากรณีใช้คีย์บอร์ด
     cancelAnimationFrame(rafId);
     state = 'idle';
+    blockTouchUntil = Date.now() + 600; // ล็อกนิ้ว 0.6 วิกันเด้ง
     const finalMs = elapsed + (pendingPenalty === 2 ? 2000 : 0);
     const isDnf = (pendingPenalty === 'DNF');
     saveTime(finalMs, isDnf, pendingPenalty === 2 ? 2 : 0);
@@ -1437,30 +1182,61 @@ window.addEventListener('keyup', (e) => {
   }
 });
 
-// หน้าจอสัมผัส (Touch Event)
+
+// 📱 💥 ระบบสัมผัสหน้าจอปรับปรุงใหม่ สมบูรณ์แบบ (Touch Logic Fix) 💥 📱
+let touchTimer = null;
+let isHoldingTouch = false;
+
+// 1. แตะเบาๆ เพื่อหยุดทันที (กรณีเวลากำลังวิ่ง)
 display.addEventListener('touchstart', (e) => {
   if (e.target !== display) return;
   e.preventDefault();
   
+  // ป้องกันจังหวะหน่วงหน้าจอชนกัน
+  if (Date.now() < blockTouchUntil) return;
+
   if (state === 'running') {
+    // 💥 กฎข้อที่ 1: ขณะเวลาเดิน แตะปุ๊บต้องหยุดทันที ทุกอย่างนิ่งสนิท!
     cancelAnimationFrame(rafId);
     state = 'idle';
+    blockTouchUntil = Date.now() + 800; // บล็อกระบบ 0.8 วินาที ห้ามข้ามไป 15 วิเด็ดขาด
+    
     const finalMs = elapsed + (pendingPenalty === 2 ? 2000 : 0);
     const isDnf = (pendingPenalty === 'DNF');
     saveTime(finalMs, isDnf, pendingPenalty === 2 ? 2 : 0);
+    
     display.classList.remove('go');
     if (isDnf) display.textContent = 'DNF';
     else display.textContent = formatTime(finalMs) + (pendingPenalty === 2 ? ' (+2)' : '');
+    
     newScramble();
+    isHoldingTouch = false;
   } else if (state === 'idle' || state === 'inspecting') {
+    // 💥 กฎข้อที่ 2: ตอนเครื่องหยุดอยู่ ถ้าจะเริ่มเล่นรอบถัดไป ต้อง "แตะค้างไว้" เท่านั้น
+    isHoldingTouch = true;
     display.className = 'ready';
+    
+    // ตั้งหน่วงเวลาว่าต้องแช่นิ้วค้างไว้ (0.3 วินาที) ถึงจะพร้อมปล่อยมือ
+    clearTimeout(touchTimer);
+    touchTimer = setTimeout(() => {
+      if (isHoldingTouch) {
+        display.className = 'ready';
+      }
+    }, 300);
   }
 });
 
+// 2. ปล่อยมือเพื่อปล่อยเวลาให้เริ่มวิ่ง (ทำเฉพาะตอนที่ผ่านการแตะค้างมาแล้ว)
 display.addEventListener('touchend', (e) => {
   if (e.target !== display) return;
   e.preventDefault();
   
+  if (!isHoldingTouch) return;
+  isHoldingTouch = false;
+  clearTimeout(touchTimer);
+
+  if (Date.now() < blockTouchUntil) return;
+
   if (state === 'idle' && !inspectionEnabled) {
     display.className = 'go';
     state = 'running';
