@@ -5,7 +5,7 @@
 <title>Rubik's Cube Timer</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="theme-color" content="#05050f">
-<meta name="description" content="ตัวจับเวลาลูกบาศก์รูบิค พร้อม scramble, สถิติ, session และรองรับ GAN Smart Timer">
+<meta name="description" content="ตัวจับเวลาลูกบาศก์รูบิค พร้อม scramble, สถิติ, session และรองรับ GAN & QiYi Smart Timer">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
@@ -82,47 +82,10 @@
     position:relative;
     z-index:1;
   }
-  h1{
-    font-size:22px;
-    color:var(--text);
-    letter-spacing:1px;
-    margin-bottom:4px;
-    text-shadow:0 0 12px rgba(0,229,255,0.6), 0 0 24px rgba(167,139,250,0.4);
-  }
-  #scramble{
-    font-size:22px;
-    font-weight:600;
-    letter-spacing:2px;
-    background:var(--panel);
-    backdrop-filter:blur(6px);
-    border:1px solid rgba(0,229,255,0.25);
-    box-shadow:0 0 20px rgba(0,229,255,0.08), inset 0 0 20px rgba(167,139,250,0.06);
-    padding:14px 24px;
-    border-radius:12px;
-    margin:12px 0 30px;
-    text-align:center;
-    max-width:700px;
-  }
-  #timerDisplay{
-    font-size:96px;
-    font-weight:700;
-    font-variant-numeric:tabular-nums;
-    transition:color .15s, text-shadow .15s;
-    margin:10px 0 30px;
-    -webkit-user-select:none;
-    -webkit-touch-callout:none;
-    touch-action:manipulation;
-    padding:20px 40px;
-    border-radius:20px;
-    cursor:pointer;
-    text-shadow:0 0 18px rgba(233,232,255,0.25);
-  }
-  @media (max-width:480px){
-    #timerDisplay{
-      font-size:64px;
-      padding:16px 24px;
-    }
-  }
+  h1{font-size:22px;color:var(--text);letter-spacing:1px;margin-bottom:4px;text-shadow:0 0 12px rgba(0,229,255,0.6), 0 0 24px rgba(167,139,250,0.4);}
+  #scramble{font-size:22px;font-weight:600;letter-spacing:2px;background:var(--panel);backdrop-filter:blur(6px);border:1px solid rgba(0,229,255,0.25);box-shadow:0 0 20px rgba(0,229,255,0.08), inset 0 0 20px rgba(167,139,250,0.06);padding:14px 24px;border-radius:12px;margin:12px 0 30px;text-align:center;max-width:700px;}
+  #timerDisplay{font-size:96px;font-weight:700;font-variant-numeric:tabular-nums;transition:color .15s, text-shadow .15s;margin:10px 0 30px;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation;padding:20px 40px;border-radius:20px;cursor:pointer;text-shadow:0 0 18px rgba(233,232,255,0.25);}
+  @media (max-width:480px){#timerDisplay{font-size:64px;padding:16px 24px;}}
   .ready{color:var(--accent2) !important; text-shadow:0 0 24px rgba(255,200,87,0.7) !important;}
   .go{color:var(--accent) !important; text-shadow:0 0 24px rgba(0,229,255,0.7) !important;}
   .inspecting{color:var(--purple) !important; text-shadow:0 0 24px rgba(167,139,250,0.7) !important;}
@@ -130,255 +93,61 @@
   .inspect-danger{color:var(--danger) !important; text-shadow:0 0 24px rgba(255,95,143,0.7) !important;}
   .penalty{color:var(--accent2) !important;}
   .dnf{color:var(--danger) !important;}
-  #inspectionToggleWrap{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    font-size:13px;
-    color:var(--muted);
-    margin-bottom:24px;
-    cursor:pointer;
-  }
-  #inspectionToggleWrap input{
-    width:16px;
-    height:16px;
-    cursor:pointer;
-  }
-  #hint{
-    color:var(--muted);
-    font-size:14px;
-    margin-bottom:30px;
-  }
-  .stats{
-    display:flex;
-    gap:14px;
-    flex-wrap:wrap;
-    justify-content:center;
-    margin-bottom:24px;
-  }
-  .stat-box{
-    background:var(--panel);
-    backdrop-filter:blur(6px);
-    border:1px solid rgba(167,139,250,0.25);
-    box-shadow:0 0 16px rgba(167,139,250,0.08);
-    border-radius:10px;
-    padding:12px 18px;
-    text-align:center;
-    min-width:90px;
-  }
-  .stat-box .label{
-    font-size:12px;
-    color:var(--muted);
-    margin-bottom:4px;
-  }
-  .stat-box .value{
-    font-size:20px;
-    font-weight:600;
-    font-variant-numeric:tabular-nums;
-  }
-  #history{
-    width:100%;
-    max-width:500px;
-    background:var(--panel);
-    backdrop-filter:blur(6px);
-    border:1px solid rgba(0,229,255,0.2);
-    box-shadow:0 0 20px rgba(0,229,255,0.06);
-    border-radius:12px;
-    padding:14px 18px;
-    max-height:260px;
-    overflow-y:auto;
-  }
-  #history h3{
-    margin:0 0 10px;
-    font-size:14px;
-    color:var(--muted);
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-  }
-  #clearBtn{
-    background:transparent;
-    border:1px solid var(--danger);
-    color:var(--danger);
-    padding:4px 10px;
-    border-radius:6px;
-    cursor:pointer;
-    font-size:12px;
-  }
+  #inspectionToggleWrap{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-bottom:24px;cursor:pointer;}
+  #inspectionToggleWrap input{width:16px;height:16px;cursor:pointer;}
+  #hint{color:var(--muted);font-size:14px;margin-bottom:30px;}
+  .stats{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-bottom:24px;}
+  .stat-box{background:var(--panel);backdrop-filter:blur(6px);border:1px solid rgba(167,139,250,0.25);box-shadow:0 0 16px rgba(167,139,250,0.08);border-radius:10px;padding:12px 18px;text-align:center;min-width:90px;}
+  .stat-box .label{font-size:12px;color:var(--muted);margin-bottom:4px;}
+  .stat-box .value{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;}
+  #history{width:100%;max-width:500px;background:var(--panel);backdrop-filter:blur(6px);border:1px solid rgba(0,229,255,0.2);box-shadow:0 0 20px rgba(0,229,255,0.06);border-radius:12px;padding:14px 18px;max-height:260px;overflow-y:auto;}
+  #history h3{margin:0 0 10px;font-size:14px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;}
+  #clearBtn{background:transparent;border:1px solid var(--danger);color:var(--danger);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px;}
   #clearBtn:hover{background:var(--danger); color:#111;}
   .time-row .idx{color:var(--muted); margin-right:10px;}
   .row-actions{display:flex; gap:10px; align-items:center;}
-  .del{
-    color:var(--muted);
-    cursor:pointer;
-    font-size:12px;
-  }
+  .del{color:var(--muted);cursor:pointer;font-size:12px;}
   .del:hover{color:var(--danger);}
-  .pen-btn{
-    color:var(--muted);
-    cursor:pointer;
-    font-size:12px;
-  }
+  .pen-btn{color:var(--muted);cursor:pointer;font-size:12px;}
   .pen-btn:hover{color:var(--accent2);}
   .pen-btn.active{color:var(--accent2); font-weight:700;}
-  .dnf-btn{
-    color:var(--muted);
-    cursor:pointer;
-    font-size:12px;
-  }
+  .dnf-btn{color:var(--muted);cursor:pointer;font-size:12px;}
   .dnf-btn:hover{color:var(--danger);}
   .dnf-btn.active{color:var(--danger); font-weight:700;}
-  #quickPenaltyBar{
-    display:flex;
-    gap:10px;
-    margin:0 0 24px;
-  }
-  #quickPenaltyBar button{
-    background:var(--panel);
-    backdrop-filter:blur(6px);
-    color:var(--text);
-    border:1px solid rgba(255,200,87,0.35);
-    padding:8px 16px;
-    border-radius:8px;
-    cursor:pointer;
-    font-size:13px;
-  }
+  #quickPenaltyBar{display:flex;gap:10px;margin:0 0 24px;}
+  #quickPenaltyBar button{background:var(--panel);backdrop-filter:blur(6px);color:var(--text);border:1px solid rgba(255,200,87,0.35);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;}
   #quickPenaltyBar button#dnfLastBtn{border-color:rgba(255,95,143,0.4);}
   #quickPenaltyBar button:hover{box-shadow:0 0 12px rgba(255,200,87,0.4);}
   #quickPenaltyBar button#dnfLastBtn:hover{box-shadow:0 0 12px rgba(255,95,143,0.4);}
   #quickPenaltyBar button:disabled{opacity:.35; cursor:not-allowed; box-shadow:none;}
-  .empty{
-    color:var(--muted);
-    font-size:13px;
-    text-align:center;
-    padding:10px 0;
-  }
-  #btSection{
-    margin-bottom:26px;
-    text-align:center;
-  }
-  #btConnectBtn{
-    background:var(--panel);
-    backdrop-filter:blur(6px);
-    color:var(--text);
-    border:1px solid rgba(167,139,250,0.35);
-    padding:10px 18px;
-    border-radius:8px;
-    cursor:pointer;
-    font-size:14px;
-  }
+  .empty{color:var(--muted);font-size:13px;text-align:center;padding:10px 0;}
+  #btSection{margin-bottom:26px;text-align:center;}
+  #btConnectBtn{background:var(--panel);backdrop-filter:blur(6px);color:var(--text);border:1px solid rgba(167,139,250,0.35);padding:10px 18px;border-radius:8px;cursor:pointer;font-size:14px;}
   #btConnectBtn:hover{border-color:var(--accent); box-shadow:0 0 14px rgba(0,229,255,0.35);}
-  #btConnectBtn.connected{
-    border-color:var(--accent);
-    color:var(--accent);
-    box-shadow:0 0 14px rgba(0,229,255,0.35);
-  }
-  #btStatus{
-    margin-top:8px;
-    font-size:12px;
-    color:var(--muted);
-  }
+  #btConnectBtn.connected{border-color:var(--accent);color:var(--accent);box-shadow:0 0 14px rgba(0,229,255,0.35);}
+  #btStatus{margin-top:8px;font-size:12px;color:var(--muted);}
   #btStatus.err{color:var(--danger);}
   #btStatus.ok{color:var(--accent);}
-  #credit{
-    margin-top:30px;
-    padding-bottom:10px;
-    font-size:13px;
-    color:var(--muted);
-    letter-spacing:0.5px;
-  }
-  #sessionBar{
-    display:flex;
-    gap:8px;
-    align-items:center;
-    margin-bottom:10px;
-    flex-wrap:wrap;
-    justify-content:center;
-  }
-  #sessionBar select, #sessionBar button{
-    background:var(--panel-solid);
-    color:var(--text);
-    border:1px solid rgba(167,139,250,0.35);
-    padding:6px 10px;
-    border-radius:6px;
-    font-size:12px;
-    cursor:pointer;
-  }
+  #credit{margin-top:30px;padding-bottom:10px;font-size:13px;color:var(--muted);letter-spacing:0.5px;}
+  #sessionBar{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;justify-content:center;}
+  #sessionBar select, #sessionBar button{background:var(--panel-solid);color:var(--text);border:1px solid rgba(167,139,250,0.35);padding:6px 10px;border-radius:6px;font-size:12px;cursor:pointer;}
   #sessionBar select{cursor:pointer;}
   #sessionBar button:hover{border-color:var(--accent); box-shadow:0 0 10px rgba(0,229,255,0.3);}
-  #cubeTypeBar{
-    display:flex;
-    gap:8px;
-    align-items:center;
-    margin-bottom:18px;
-    font-size:12px;
-    color:var(--muted);
-  }
-  #cubeTypeBar select{
-    background:var(--panel-solid);
-    color:var(--text);
-    border:1px solid rgba(167,139,250,0.35);
-    padding:6px 10px;
-    border-radius:6px;
-    font-size:12px;
-    cursor:pointer;
-  }
+  #cubeTypeBar{display:flex;gap:8px;align-items:center;margin-bottom:18px;font-size:12px;color:var(--muted);}
+  #cubeTypeBar select{background:var(--panel-solid);color:var(--text);border:1px solid rgba(167,139,250,0.35);padding:6px 10px;border-radius:6px;font-size:12px;cursor:pointer;}
   #cubeTypeBar select:hover{border-color:var(--accent);}
-  #cubeNetWrap{
-    margin-bottom:20px;
-  }
-  #cubeNetWrap svg{
-    display:block;
-  }
-  #exportBtn{
-    background:transparent;
-    border:1px solid var(--accent);
-    color:var(--accent);
-    padding:4px 10px;
-    border-radius:6px;
-    cursor:pointer;
-    font-size:12px;
-    margin-right:6px;
-  }
+  #cubeNetWrap{margin-bottom:20px;}
+  #cubeNetWrap svg{display:block;}
+  #exportBtn{background:transparent;border:1px solid var(--accent);color:var(--accent);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px;margin-right:6px;}
   #exportBtn:hover{background:var(--accent); color:#111;}
-  .time-row{
-    display:block;
-    padding:6px 0;
-    border-bottom:1px solid rgba(167,139,250,0.15);
-    font-size:14px;
-    font-variant-numeric:tabular-nums;
-    cursor:pointer;
-  }
-  .time-row .row-main{
-    display:flex;
-    justify-content:space-between;
-  }
-  .time-row .row-scramble{
-    display:none;
-    font-size:11px;
-    font-variant-numeric:normal;
-    color:var(--muted);
-    margin-top:4px;
-    letter-spacing:1px;
-    word-break:break-all;
-  }
+  .time-row{display:block;padding:6px 0;border-bottom:1px solid rgba(167,139,250,0.15);font-size:14px;font-variant-numeric:tabular-nums;cursor:pointer;}
+  .time-row .row-main{display:flex;justify-content:space-between;}
+  .time-row .row-scramble{display:none;font-size:11px;font-variant-numeric:normal;color:var(--muted);margin-top:4px;letter-spacing:1px;word-break:break-all;}
   .time-row.expanded .row-scramble{display:block;}
   .time-row:last-child{border-bottom:none;}
-  .time-row.best-time{
-    background:linear-gradient(90deg, rgba(255,200,87,0.16), transparent 75%);
-    border-left:3px solid var(--accent2);
-    border-radius:6px;
-    padding-left:9px;
-    margin-left:-3px;
-  }
-  .time-row.best-time .row-main{
-    color:var(--accent2);
-    font-weight:700;
-  }
-  .best-star{
-    margin-right:6px;
-    filter:drop-shadow(0 0 4px rgba(255,200,87,0.6));
-  }
+  .time-row.best-time{background:linear-gradient(90deg, rgba(255,200,87,0.16), transparent 75%);border-left:3px solid var(--accent2);border-radius:6px;padding-left:9px;margin-left:-3px;}
+  .time-row.best-time .row-main{color:var(--accent2);font-weight:700;}
+  .best-star{margin-right:6px;filter:drop-shadow(0 0 4px rgba(255,200,87,0.6));}
 </style>
 </head>
 <body>
@@ -438,10 +207,133 @@
 
 <footer id="credit">by Thunder web studio ⚡️</footer>
 
-<script src="bluetooth-fix.js"></script>
+<!-- BLUETOOTH FIX EMBEDDED -->
 <script>
-// [Existing timer code remains here - see full index.html file for complete script]
+// ============================================
+// BLUETOOTH TIMER - GAN & QiYi Smart Timer
+// ============================================
+
+const BT_UUIDS = {
+  SERVICE: {
+    GAN: '0000fee7-0000-1000-8000-00805f9b34fb',
+    QIYI: '6e400001-b5a3-f393-e0a9-e50e24dcca9e',
+  },
+  CHARACTERISTIC: {
+    GAN_TIME: '000036f5-0000-1000-8000-00805f9b34fb',
+    QIYI_RX: '6e400002-b5a3-f393-e0a9-e50e24dcca9e',
+    QIYI_TX: '6e400003-b5a3-f393-e0a9-e50e24dcca9e',
+  }
+};
+
+let btDevice = null, btServer = null, btService = null, btChar = null, btConnected = false;
+
+async function connectBluetoothTimer() {
+  try {
+    console.log('📱 Requesting BLE device...');
+    btDevice = await navigator.bluetooth.requestDevice({
+      filters: [{name:'GAN'},{name:'GAN-SmartTimer'},{namePrefix:'QiYi'}],
+      optionalServices: [BT_UUIDS.SERVICE.GAN, BT_UUIDS.SERVICE.QIYI]
+    });
+    console.log('✅ Device selected:', btDevice.name);
+    updateBtStatus('เลือกแล้ว: ' + btDevice.name, 'ok');
+    btServer = await btDevice.gatt.connect();
+    console.log('✅ GATT server connected');
+    updateBtStatus('เชื่อมต่อ GATT แล้ว', 'ok');
+    
+    let serviceUUID = null, charUUID = null;
+    try {
+      btService = await btServer.getPrimaryService(BT_UUIDS.SERVICE.GAN);
+      serviceUUID = BT_UUIDS.SERVICE.GAN;
+      charUUID = BT_UUIDS.CHARACTERISTIC.GAN_TIME;
+      console.log('✅ GAN Service found');
+      updateBtStatus('พบ GAN service', 'ok');
+    } catch (e) {
+      console.log('⚠️ GAN not found, trying QiYi...');
+      try {
+        btService = await btServer.getPrimaryService(BT_UUIDS.SERVICE.QIYI);
+        serviceUUID = BT_UUIDS.SERVICE.QIYI;
+        charUUID = BT_UUIDS.CHARACTERISTIC.QIYI_TX;
+        console.log('✅ QiYi Service found');
+        updateBtStatus('พบ QiYi service', 'ok');
+      } catch (e2) {
+        throw new Error('ไม่พบ service ที่รองรับ');
+      }
+    }
+    
+    btChar = await btService.getCharacteristic(charUUID);
+    console.log('✅ Characteristic found');
+    if (btChar.properties.notify) {
+      await btChar.startNotifications();
+      btChar.addEventListener('characteristicvaluechanged', onTimerValueChanged);
+      console.log('🔔 Notifications enabled');
+      updateBtStatus('✅ เชื่อมต่อแล้ว - ' + btDevice.name, 'ok');
+    }
+    btDevice.addEventListener('gattserverdisconnected', onBluetoothDisconnected);
+    btConnected = true;
+    document.getElementById('btConnectBtn').classList.add('connected');
+    document.getElementById('btConnectBtn').textContent = '✅ เชื่อมต่อแล้ว';
+  } catch (error) {
+    console.error('❌ Error:', error);
+    updateBtStatus('ข้อผิดพลาด: ' + error.message, 'err');
+    btConnected = false;
+  }
+}
+
+function onTimerValueChanged(event) {
+  const value = event.target.value;
+  let timeMs = null;
+  if (btDevice.name && btDevice.name.includes('GAN')) {
+    timeMs = value.getUint32(0, true);
+  } else {
+    let text = new TextDecoder().decode(value);
+    if (!isNaN(parseFloat(text))) {
+      timeMs = Math.round(parseFloat(text) * 100);
+    }
+  }
+  if (timeMs !== null && timeMs > 0) {
+    console.log('⏱️ Timer: ' + (timeMs / 1000).toFixed(2) + 's');
+    if (state === 'running') {
+      handleTimerComplete(timeMs);
+    }
+  }
+}
+
+function handleTimerComplete(timeMs) {
+  cancelAnimationFrame(rafId);
+  const penalty = pendingPenalty;
+  pendingPenalty = 0;
+  let elapsed = timeMs;
+  if (penalty) elapsed += penalty * 1000;
+  display.textContent = formatTime(elapsed) + (penalty ? ' (+2)' : '');
+  display.classList.remove('go');
+  state = 'idle';
+  saveTime(elapsed, false, penalty);
+  newScramble();
+  updateBtStatus('บันทึก: ' + formatTime(elapsed), 'ok');
+}
+
+function onBluetoothDisconnected(event) {
+  console.log('⚠️ Device disconnected:', event.target.name);
+  btConnected = false;
+  btDevice = null;
+  btServer = null;
+  btService = null;
+  btChar = null;
+  document.getElementById('btConnectBtn').classList.remove('connected');
+  document.getElementById('btConnectBtn').textContent = '🔗 เชื่อมต่อ Bluetooth Timer';
+  updateBtStatus('ยังไม่ได้เชื่อมต่อ', 'err');
+}
+
+function updateBtStatus(msg, status) {
+  const statusEl = document.getElementById('btStatus');
+  statusEl.textContent = msg;
+  statusEl.className = status;
+}
+
+document.getElementById('btConnectBtn').addEventListener('click', connectBluetoothTimer);
+console.log('🚀 Bluetooth module loaded');
 </script>
 
+<script src="index-script.js"></script>
 </body>
 </html>
