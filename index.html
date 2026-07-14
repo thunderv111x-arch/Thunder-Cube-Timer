@@ -12,6 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Cube Timer">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
   :root{
     --bg:#05050f;
@@ -24,6 +25,53 @@
     --text:#e9e8ff;
     --muted:#8f8cba;
   }
+  
+  /* --- Themes Configurations --- */
+  body.theme-neon{
+    --bg:#000000;
+    --panel:rgba(20,20,20,0.7);
+    --panel-solid:#151515;
+    --accent:#39ff14;
+    --accent2:#fff01f;
+    --danger:#ff073a;
+    --purple:#b500ff;
+    --text:#ffffff;
+    --muted:#aaaaaa;
+  }
+  body.theme-retro{
+    --bg:#2b1810;
+    --panel:rgba(60,35,25,0.6);
+    --panel-solid:#4a2c1f;
+    --accent:#ffb000;
+    --accent2:#fe6c00;
+    --danger:#ff3333;
+    --purple:#cc66ff;
+    --text:#ffe6d5;
+    --muted:#b89985;
+  }
+  body.theme-cyber{
+    --bg:#0d0116;
+    --panel:rgba(21,2,36,0.6);
+    --panel-solid:#26053b;
+    --accent:#ff007f;
+    --accent2:#00f0ff;
+    --danger:#ff3b30;
+    --purple:#9d00ff;
+    --text:#e0aaff;
+    --muted:#7b2cbf;
+  }
+  body.theme-light{
+    --bg:#f4f5f9;
+    --panel:rgba(255,255,255,0.8);
+    --panel-solid:#ffffff;
+    --accent:#007aff;
+    --accent2:#ff9500;
+    --danger:#ff3b30;
+    --purple:#5856d6;
+    --text:#1c1c1e;
+    --muted:#8e8e93;
+  }
+
   *{box-sizing:border-box;}
   body{
     margin:0;
@@ -42,7 +90,13 @@
     user-select:none;
     position:relative;
     overflow-x:hidden;
+    transition: background 0.4s, color 0.4s;
   }
+  
+  body.theme-neon, body.theme-retro, body.theme-cyber, body.theme-light{
+    background: var(--bg) !important;
+  }
+  
   body::before, body::after{
     content:"";
     position:fixed;
@@ -74,6 +128,9 @@
     opacity:.35;
     animation:twinkle 6s ease-in-out infinite alternate-reverse;
   }
+  
+  body.theme-light::before, body.theme-light::after { display:none; }
+  
   @keyframes twinkle{
     0%{opacity:.2;}
     100%{opacity:.7;}
@@ -89,6 +146,8 @@
     margin-bottom:4px;
     text-shadow:0 0 12px rgba(0,229,255,0.6), 0 0 24px rgba(167,139,250,0.4);
   }
+  body.theme-light h1 { text-shadow: none; }
+  
   #scramble{
     font-size:22px;
     font-weight:600;
@@ -102,7 +161,10 @@
     margin:12px 0 30px;
     text-align:center;
     max-width:700px;
+    transition: background 0.3s, border 0.3s;
   }
+  body.theme-light #scramble{ border-color: #ccc; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+
   #timerDisplay{
     font-size:96px;
     font-weight:700;
@@ -130,13 +192,36 @@
   .inspect-danger{color:var(--danger) !important; text-shadow:0 0 24px rgba(255,95,143,0.7) !important;}
   .penalty{color:var(--accent2) !important;}
   .dnf{color:var(--danger) !important;}
+  
+  #controlPanel{
+    display:flex;
+    gap:16px;
+    align-items:center;
+    margin-bottom:20px;
+    flex-wrap:wrap;
+    justify-content:center;
+    background: var(--panel);
+    padding: 10px 20px;
+    border-radius: 10px;
+  }
+  #controlPanel select, #controlPanel label{
+    font-size:13px;
+  }
+  #controlPanel select{
+    background: var(--panel-solid);
+    color: var(--text);
+    border: 1px solid rgba(167,139,250,0.3);
+    padding: 4px 8px;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
   #inspectionToggleWrap{
     display:flex;
     align-items:center;
     gap:8px;
     font-size:13px;
     color:var(--muted);
-    margin-bottom:24px;
     cursor:pointer;
   }
   #inspectionToggleWrap input{
@@ -148,6 +233,7 @@
     color:var(--muted);
     font-size:14px;
     margin-bottom:30px;
+    text-align:center;
   }
   .stats{
     display:flex;
@@ -176,6 +262,18 @@
     font-weight:600;
     font-variant-numeric:tabular-nums;
   }
+  
+  #chartSection{
+    width:100%;
+    max-width:650px;
+    background:var(--panel);
+    border: 1px solid rgba(167,139,250,0.15);
+    border-radius:12px;
+    padding:16px;
+    margin-bottom:24px;
+    display:none; /* แสดงเมื่อมีข้อมูล 2 ตัวขึ้นไป */
+  }
+  
   #history{
     width:100%;
     max-width:500px;
@@ -228,6 +326,7 @@
   }
   .dnf-btn:hover{color:var(--danger);}
   .dnf-btn.active{color:var(--danger); font-weight:700;}
+  
   #quickPenaltyBar{
     display:flex;
     gap:10px;
@@ -247,12 +346,14 @@
   #quickPenaltyBar button:hover{box-shadow:0 0 12px rgba(255,200,87,0.4);}
   #quickPenaltyBar button#dnfLastBtn:hover{box-shadow:0 0 12px rgba(255,95,143,0.4);}
   #quickPenaltyBar button:disabled{opacity:.35; cursor:not-allowed; box-shadow:none;}
+  
   .empty{
     color:var(--muted);
     font-size:13px;
     text-align:center;
     padding:10px 0;
   }
+  
   #btSection{
     margin-bottom:26px;
     text-align:center;
@@ -280,6 +381,7 @@
   }
   #btStatus.err{color:var(--danger);}
   #btStatus.ok{color:var(--accent);}
+  
   #credit{
     margin-top:30px;
     padding-bottom:10px;
@@ -304,8 +406,8 @@
     font-size:12px;
     cursor:pointer;
   }
-  #sessionBar select{cursor:pointer;}
   #sessionBar button:hover{border-color:var(--accent); box-shadow:0 0 10px rgba(0,229,255,0.3);}
+  
   #cubeTypeBar{
     display:flex;
     gap:8px;
@@ -324,6 +426,7 @@
     cursor:pointer;
   }
   #cubeTypeBar select:hover{border-color:var(--accent);}
+  
   #cubeNetWrap{
     margin-bottom:20px;
   }
@@ -341,6 +444,7 @@
     margin-right:6px;
   }
   #exportBtn:hover{background:var(--accent); color:#111;}
+  
   .time-row{
     display:block;
     padding:6px 0;
@@ -391,6 +495,7 @@
   <button id="renameSessionBtn" title="เปลี่ยนชื่อ session">แก้ชื่อ</button>
   <button id="deleteSessionBtn" title="ลบ session นี้">ลบ</button>
 </div>
+
 <div id="cubeTypeBar">
   <label for="cubeTypeSelect">ประเภท:</label>
   <select id="cubeTypeSelect">
@@ -401,6 +506,22 @@
     <option value="pyraminx">Pyraminx</option>
     <option value="skewb">Skewb</option>
   </select>
+</div>
+
+<div id="controlPanel">
+  <div>
+    <label for="themeSelect">🎨 ธีม: </label>
+    <select id="themeSelect">
+      <option value="space">Space Space 🌌</option>
+      <option value="neon">Neon Cyberpunk 🟢</option>
+      <option value="retro">Classic Retro 🟤</option>
+      <option value="cyber">Synthwave Cyber 🟣</option>
+      <option value="light">Minimal Light ⚪</option>
+    </select>
+  </div>
+  <label id="voiceToggleWrap" style="cursor:pointer; color:var(--text); font-size:13px; display:flex; align-items:center; gap:6px;">
+    <input type="checkbox" id="voiceToggle" checked>🔊 ขานเวลาเสร็จ (Voice Broadcast)
+  </label>
 </div>
 
 <div id="scramble">กำลังโหลด...</div>
@@ -414,10 +535,12 @@
   <button id="dnfLastBtn" onclick="toggleDnf(0)">❌ DNF (เวลาล่าสุด)</button>
 </div>
 
-<label id="inspectionToggleWrap">
-  <input type="checkbox" id="inspectionToggle" checked>
-  ใช้เวลาดูลูก 15 วินาที (WCA Inspection)
-</label>
+<div style="margin-bottom: 20px;">
+  <label id="inspectionToggleWrap">
+    <input type="checkbox" id="inspectionToggle" checked>
+    ใช้เวลาดูลูก 15 วินาที (WCA Inspection)
+  </label>
+</div>
 
 <div id="btSection">
   <button id="btConnectBtn">🔗 เชื่อมต่อ Bluetooth Timer (GAN Smart Timer)</button>
@@ -429,6 +552,10 @@
   <div class="stat-box"><div class="label">Ao5</div><div class="value" id="statAo5">-</div></div>
   <div class="stat-box"><div class="label">Ao12</div><div class="value" id="statAo12">-</div></div>
   <div class="stat-box"><div class="label">Mean</div><div class="value" id="statMean">-</div></div>
+</div>
+
+<div id="chartSection">
+  <canvas id="timeChart" style="width:100%; height:180px;"></canvas>
 </div>
 
 <div id="history">
@@ -460,7 +587,6 @@ function generateScramble(len=20){
   return moves.join(' ');
 }
 
-// ---------- Generators for other cube types ----------
 function generateSimpleScramble(faces, mods, len){
   let moves = [];
   let last = '';
@@ -499,7 +625,6 @@ function generatePyraminxScramble(){
   const faces = ['U','L','R','B'];
   const mods = ['', "'"];
   let moves = generateSimpleScramble(faces, mods, 10).split(' ');
-  // tips (แต่ละมุมมีโอกาสหมุนหรือไม่หมุน)
   ['u','l','r','b'].forEach(tip => {
     if(Math.random() < 0.7){
       const mod = mods[Math.floor(Math.random()*mods.length)];
@@ -788,12 +913,12 @@ function renderSkewbNet(scrambleStr){
 // ---------- Timer logic ----------
 const display = document.getElementById('timerDisplay');
 const inspectionToggle = document.getElementById('inspectionToggle');
-let state = 'idle'; // idle -> holding -> ready -> inspecting -> running
+let state = 'idle'; 
 let holdOrigin = null;
 let holdTimeout = null;
 let startTime = 0;
 let rafId = null;
-let blockTouchUntil = 0; // ล็อกปุ่มกันสัญญาณวิทยุซ้อน
+let blockTouchUntil = 0; 
 
 let inspectionEnabled = true;
 inspectionToggle.addEventListener('change', ()=>{
@@ -824,6 +949,19 @@ function beep(freq=880, dur=120){
     gain.gain.setValueAtTime(0.15, ctx.currentTime);
     osc.start();
     osc.stop(ctx.currentTime + dur/1000);
+  }catch(err){}
+}
+
+function speakTime(text){
+  if(!document.getElementById('voiceToggle').checked) return;
+  try{
+    if('speechSynthesis' in window){
+      window.speechSynthesis.cancel(); 
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US'; 
+      utterance.rate = 1.1;
+      window.speechSynthesis.speak(utterance);
+    }
   }catch(err){}
 }
 
@@ -890,6 +1028,7 @@ function finalizeDnf(){
   saveTime(null, true);
   state = 'idle';
   newScramble();
+  speakTime("DNF");
   setTimeout(()=>{
     clearInspectVisualClasses();
     display.textContent = '0.00';
@@ -897,7 +1036,7 @@ function finalizeDnf(){
 }
 
 function pressStart(){
-  if(Date.now() < blockTouchUntil) return; // บล็อกอินพุตถ้าบลูทูธกำลังคุมอยู่
+  if(Date.now() < blockTouchUntil) return; 
   if(btConnected && (state === 'running' || state === 'holding' || state === 'ready')) return;
 
   if(state === 'running'){
@@ -906,10 +1045,17 @@ function pressStart(){
     const penalty = pendingPenalty;
     pendingPenalty = 0;
     if(penalty) elapsed += penalty*1000;
+    
     display.textContent = formatTime(elapsed) + (penalty ? ' (+2)' : '');
     display.classList.remove('go');
     state = 'idle';
+    
     saveTime(elapsed, false, penalty);
+    
+    // ขานเสียงพูด
+    const totalSec = (elapsed/1000).toFixed(2);
+    speakTime(totalSec);
+    
     newScramble();
     return;
   }
@@ -993,6 +1139,7 @@ const LEGACY_KEY = 'rubikTimerHistory';
 
 let sessionsData = { sessions: {}, currentId: null };
 let times = [];
+let timeChart = null; // ตัวแปรสำหรับ Chart.js
 
 function uid(){
   return 's' + Date.now() + Math.floor(Math.random()*1000);
@@ -1062,6 +1209,7 @@ function switchSession(id){
   syncCubeTypeSelect();
   renderHistory();
   renderStats();
+  updateChart();
   newScramble();
 }
 
@@ -1102,6 +1250,7 @@ document.getElementById('deleteSessionBtn').addEventListener('click', deleteSess
 document.getElementById('cubeTypeSelect').addEventListener('change', (e)=>{
   sessionsData.sessions[sessionsData.currentId].cubeType = e.target.value;
   persistSessions();
+  populateSessionSelect();
   newScramble();
 });
 
@@ -1111,6 +1260,7 @@ function saveTime(ms, isDnf=false, penalty=0){
   populateSessionSelect();
   renderHistory();
   renderStats();
+  updateChart();
 }
 
 function deleteTime(idx){
@@ -1119,6 +1269,7 @@ function deleteTime(idx){
   populateSessionSelect();
   renderHistory();
   renderStats();
+  updateChart();
 }
 
 function clearAll(){
@@ -1128,6 +1279,7 @@ function clearAll(){
   populateSessionSelect();
   renderHistory();
   renderStats();
+  updateChart();
 }
 
 document.getElementById('clearBtn').addEventListener('click', clearAll);
@@ -1151,6 +1303,7 @@ function togglePenalty(i){
   persistSessions();
   renderHistory();
   renderStats();
+  updateChart();
 }
 
 function toggleDnf(i){
@@ -1169,6 +1322,7 @@ function toggleDnf(i){
   persistSessions();
   renderHistory();
   renderStats();
+  updateChart();
 }
 
 function updateQuickPenaltyBar(){
@@ -1244,6 +1398,75 @@ function renderStats(){
   document.getElementById('statMean').textContent = mean !== null ? formatTime(mean) : '-';
 }
 
+// ---------- Chart.js Implementation ----------
+function updateChart(){
+  const chartSect = document.getElementById('chartSection');
+  // กราฟจะแสดงเมื่อมีข้อมูลจับเวลา 2 ตัวขึ้นไป
+  if(times.length < 2){
+    chartSect.style.display = 'none';
+    if(timeChart){ timeChart.destroy(); timeChart = null; }
+    return;
+  }
+  
+  chartSect.style.display = 'block';
+  
+  // แปลงประวัติย้อนกลับเพื่อให้แสดงผลจากตัวแรกไปถึงล่าสุดบนแกน X
+  const reversedTimes = [...times].reverse();
+  const labels = reversedTimes.map((t, idx) => '#' + (idx + 1));
+  const dataPoints = reversedTimes.map(t => t.dnf ? null : (t.time / 1000));
+  
+  // กำหนดสีของเส้นตามสี Accent ของแต่ละธีมเพื่อความสวยงาม
+  const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#00e5ff';
+  const textMuted = getComputedStyle(document.documentElement).getPropertyValue('--muted').trim() || '#8f8cba';
+
+  const ctx = document.getElementById('timeChart').getContext('2d');
+  
+  if(timeChart){
+    timeChart.data.labels = labels;
+    timeChart.data.datasets[0].data = dataPoints;
+    timeChart.data.datasets[0].borderColor = accentColor;
+    timeChart.data.datasets[0].backgroundColor = accentColor + '15';
+    timeChart.options.scales.x.ticks.color = textMuted;
+    timeChart.options.scales.y.ticks.color = textMuted;
+    timeChart.update();
+  } else {
+    timeChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'เวลา (วินาที)',
+          data: dataPoints,
+          borderColor: accentColor,
+          backgroundColor: accentColor + '15',
+          borderWidth: 2,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          tension: 0.15,
+          spanGaps: true // ข้ามจุดที่เป็น DNF
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: textMuted, font: { size: 10 } }
+          },
+          y: {
+            grid: { color: 'rgba(167,139,250,0.08)' },
+            ticks: { color: textMuted, font: { size: 10 } }
+          }
+        }
+      }
+    });
+  }
+}
+
 function exportCsv(){
   if(times.length === 0){
     alert('ยังไม่มีข้อมูลใน session นี้');
@@ -1275,6 +1498,47 @@ function exportCsv(){
 }
 
 document.getElementById('exportBtn').addEventListener('click', exportCsv);
+
+// ---------- Theme Manager ----------
+const themeSelect = document.getElementById('themeSelect');
+const voiceToggle = document.getElementById('voiceToggle');
+
+function setTheme(themeName){
+  // ลบคลาสธีมเดิมออกทั้งหมด
+  document.body.classList.remove('theme-neon', 'theme-retro', 'theme-cyber', 'theme-light');
+  
+  // ถ้าไม่ใช่ตัวเลือก space (ตัวเลือกหลัก) ให้แอดคลาสของธีมนั้น
+  if(themeName !== 'space'){
+    document.body.classList.add('theme-' + themeName);
+  }
+  localStorage.setItem('rubikTimerTheme', themeName);
+  
+  // รีเฟรชสีกราฟให้เหมาะสมกับธีมใหม่
+  if(times.length >= 2){
+    updateChart();
+  }
+}
+
+themeSelect.addEventListener('change', (e) => {
+  setTheme(e.target.value);
+});
+
+function loadUserPreferences(){
+  const savedTheme = localStorage.getItem('rubikTimerTheme') || 'space';
+  themeSelect.value = savedTheme;
+  setTheme(savedTheme);
+
+  const savedVoice = localStorage.getItem('rubikTimerVoice');
+  if(savedVoice !== null){
+    voiceToggle.checked = savedVoice === 'true';
+  } else {
+    voiceToggle.checked = true; // ค่าเริ่มต้นเปิดขานเสียง
+  }
+}
+
+voiceToggle.addEventListener('change', (e) => {
+  localStorage.setItem('rubikTimerVoice', e.target.checked);
+});
 
 // ---------- GAN Smart Timer (Bluetooth Optimizations) ----------
 const GAN_SERVICE_UUID = '0000fff0-0000-1000-8000-00805f9b34fb';
@@ -1331,7 +1595,6 @@ function handleGanTimerEvent(event){
       blockTouchUntil = Date.now() + 500; // บล็อกการกดหน้าจอกันซ้ำซ้อน
       display.classList.remove('go');
       if(state === 'inspecting'){
-        // ถ้าดูลูกอยู่ แล้วเอามือวางแผ่นสแต็ค ให้เปลี่ยนสีพร้อมปล่อยตัว
         display.className = 'ready';
       } else if(state === 'idle') {
         if(inspectionEnabled){
@@ -1346,7 +1609,6 @@ function handleGanTimerEvent(event){
 
     case 'HANDS_OFF':
     case 'GET_SET':
-      // ถ้าปล่อยมือเบาๆ โดยยังไม่ได้เริ่มคิวบ์
       if(state !== 'inspecting' && state !== 'running'){
         display.classList.remove('go', 'ready');
       }
@@ -1373,7 +1635,13 @@ function handleGanTimerEvent(event){
           const total = parsed.recordedMs + penalty*1000;
           display.textContent = formatTime(total) + (penalty ? ' (+2)' : '');
           state = 'idle';
+          
           saveTime(total, false, penalty);
+          
+          // ขานเสียงผ่าน Bluetooth
+          const totalSec = (total/1000).toFixed(2);
+          speakTime(totalSec);
+          
           newScramble();
         }
       }
@@ -1451,8 +1719,10 @@ btBtn.addEventListener('click', async () => {
 loadSessions();
 populateSessionSelect();
 syncCubeTypeSelect();
+loadUserPreferences(); 
 renderHistory();
 renderStats();
+updateChart(); 
 newScramble();
 
 // ---------- PWA Registration ----------
