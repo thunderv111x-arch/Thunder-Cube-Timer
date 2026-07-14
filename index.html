@@ -5,7 +5,7 @@
 <title>Rubik's Cube Timer</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="theme-color" content="#05050f">
-<meta name="description" content="ตัวจับเวลาลูกบาศก์รูบิค พร้อม scramble, สถิติ, session และรองรับ GAN & QY Smart Timer">
+<meta name="description" content="ตัวจับเวลาลูกบาศก์รูบิค พร้อม scramble, สถิติ, session และรองรับ GAN & QiYi Smart Timer">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
@@ -420,7 +420,7 @@
 </label>
 
 <div id="btSection">
-  <button id="btConnectBtn">🔗 เชื่อมต่อ Bluetooth Timer (GAN / QY Smart Timer)</button>
+  <button id="btConnectBtn">🔗 เชื่อมต่อ Bluetooth Timer</button>
   <div id="btStatus">ยังไม่ได้เชื่อมต่อ</div>
 </div>
 
@@ -499,6 +499,7 @@ function generatePyraminxScramble(){
   const faces = ['U','L','R','B'];
   const mods = ['', "'"];
   let moves = generateSimpleScramble(faces, mods, 10).split(' ');
+  // tips (แต่ละมุมมีโอกาสหมุนหรือไม่หมุน)
   ['u','l','r','b'].forEach(tip => {
     if(Math.random() < 0.7){
       const mod = mods[Math.floor(Math.random()*mods.length)];
@@ -520,6 +521,7 @@ const SCRAMBLERS = {
 let currentScramble = '';
 
 // ---------- Cube net visualizer ----------
+// Facelet order: U(0-8) R(9-17) F(18-26) D(27-35) L(36-44) B(45-53)
 const CUBE_BASE_MOVES = {
   U: [2,5,8,1,4,7,0,3,6,18,19,20,12,13,14,15,16,17,36,37,38,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,45,46,47,39,40,41,42,43,44,9,10,11,48,49,50,51,52,53],
   D: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,24,25,26,18,19,20,21,22,23,42,43,44,33,30,27,34,31,28,35,32,29,36,37,38,39,40,41,51,52,53,45,46,47,48,49,50,15,16,17],
@@ -574,9 +576,10 @@ const FACE_COLOR = {
 function renderCubeNet(scrambleStr){
   const facelets = scrambleToFacelets(scrambleStr);
   const idx = { U:0, R:9, F:18, D:27, L:36, B:45 };
-  const S = 22;
+  const S = 22; // sticker size
   const gap = 2;
   const faceW = S*3 + gap*2;
+
   const layout = { U:[1,0], L:[0,1], F:[1,1], R:[2,1], B:[3,1], D:[1,2] };
   const totalW = faceW*4 + 20*3;
   const totalH = faceW*3 + 20*2;
@@ -619,6 +622,7 @@ function newScramble(){
   renderPuzzlePreview(type, currentScramble);
 }
 
+// ---------- Seeded PRNG ----------
 function hashSeed(str){
   let h = 1779033703 ^ str.length;
   for(let i=0;i<str.length;i++){
@@ -633,14 +637,23 @@ function hashSeed(str){
   };
 }
 
+// ---------- Puzzle preview router ----------
 function renderPuzzlePreview(type, scrambleStr){
-  if(type === '3x3') renderCubeNet(scrambleStr);
-  else if(type === '2x2') render2x2Net(scrambleStr);
-  else if(type === '4x4') renderNxNNet(4, scrambleStr);
-  else if(type === '5x5') renderNxNNet(5, scrambleStr);
-  else if(type === 'pyraminx') renderPyraminxNet(scrambleStr);
-  else if(type === 'skewb') renderSkewbNet(scrambleStr);
-  else renderCubeNet(scrambleStr);
+  if(type === '3x3'){
+    renderCubeNet(scrambleStr);
+  } else if(type === '2x2'){
+    render2x2Net(scrambleStr);
+  } else if(type === '4x4'){
+    renderNxNNet(4, scrambleStr);
+  } else if(type === '5x5'){
+    renderNxNNet(5, scrambleStr);
+  } else if(type === 'pyraminx'){
+    renderPyraminxNet(scrambleStr);
+  } else if(type === 'skewb'){
+    renderSkewbNet(scrambleStr);
+  } else {
+    renderCubeNet(scrambleStr);
+  }
 }
 
 function render2x2Net(scrambleStr){
@@ -1277,23 +1290,29 @@ function exportCsv(){
 
 document.getElementById('exportBtn').addEventListener('click', exportCsv);
 
-
-// =========================================================================
-//  GAN & QY SMART TIMER SMART CORE CONNECTOR (csTimer Bluetooth Protocol)
-// =========================================================================
-
-// --- UUID คอนฟิกูเรชัน ---
+// ---------- UNIVERSAL SMART TIMER ENGINE (Bluetooth) ----------
+// GAN Specifications
 const GAN_SERVICE_UUID = '0000fff0-0000-1000-8000-00805f9b34fb';
 const GAN_TIMER_STATE_CHAR = '0000fff5-0000-1000-8000-00805f9b34fb';
 
-const QY_SERVICE_UUID = '0000ffe0-0000-1000-8000-00805f9b34fb';
-const QY_TIMER_NOTIFY_CHAR = '0000ffe1-0000-1000-8000-00805f9b34fb';
+const GAN_STATE = {
+  0x01: 'GET_SET',
+  0x02: 'HANDS_OFF',
+  0x03: 'RUNNING',
+  0x04: 'STOPPED',
+  0x05: 'IDLE',
+  0x06: 'HANDS_ON',
+  0x07: 'FINISHED'
+};
 
-// ตัวแปรการเชื่อมต่อระดับ Global
+// QiYi (QY) Specifications
+const QIYI_SERVICE_UUID = '0000ffe0-0000-1000-8000-00805f9b34fb';
+const QIYI_CHAR_UUID = '0000ffe1-0000-1000-8000-00805f9b34fb';
+
 let btDevice = null;
 let btServer = null;
 let btConnected = false;
-let connectedDeviceType = null; // 'GAN' หรือ 'QY'
+let connectedDeviceType = 'GAN'; // 'GAN' หรือ 'QIYI'
 
 const btBtn = document.getElementById('btConnectBtn');
 const btStatus = document.getElementById('btStatus');
@@ -1303,8 +1322,7 @@ function setBtStatus(text, cls){
   btStatus.className = cls || '';
 }
 
-// --- 1. ตัวแปลงแพ็กเก็ตฝั่ง GAN Timer ---
-const GAN_STATE = { 0x01:'GET_SET', 0x02:'HANDS_OFF', 0x03:'RUNNING', 0x04:'STOPPED', 0x05:'IDLE', 0x06:'HANDS_ON', 0x07:'FINISHED' };
+// GAN Packet Parser
 function parseGanTimerPacket(dataView){
   const bytes = new Uint8Array(dataView.buffer);
   if(bytes[0] !== 0xFE) return null;
@@ -1317,51 +1335,19 @@ function parseGanTimerPacket(dataView){
     const seconds = payload[3];
     const msLo = payload[4];
     const msHi = payload[5];
-    recordedMs = minutes*60000 + seconds*1000 + (msLo + msHi*256);
+    const ms = msLo + msHi*256;
+    recordedMs = minutes*60000 + seconds*1000 + ms;
   }
-  return { state: GAN_STATE[state] || 'UNKNOWN', recordedMs };
+  return { state, recordedMs };
 }
 
-// --- 2. ตัวแปลงแพ็กเก็ตฝั่ง QY Timer (อิงสเปกย้อนกลับจากฐานข้อมูล csTimer) ---
-function parseQyTimerPacket(dataView){
-  const bytes = new Uint8Array(dataView.buffer);
-  
-  // โครงสร้างแพ็กเก็ต QY ขั้นต่ำคือ 7 ไบต์: ตัวอย่างเช่น [0xFE, 0x04, สถานะ, Min, Sec, MsLo, MsHi, Checksum]
-  if(bytes.length < 5) return null;
-  
-  // บิตบอกสถานะของ QY (บิตที่ 2)
-  const qyRawState = bytes[2];
-  let stateName = 'UNKNOWN';
-  let recordedMs = null;
-  
-  // แยกสถานะการกด
-  if (qyRawState === 0x01) {
-    stateName = 'HANDS_ON';
-  } else if (qyRawState === 0x02) {
-    stateName = 'HANDS_OFF';
-  } else if (qyRawState === 0x03) {
-    stateName = 'RUNNING';
-  } else if (qyRawState === 0x04 || qyRawState === 0x05) {
-    stateName = 'STOPPED';
-    // ถอดรหัสเวลา
-    if(bytes.length >= 7){
-      const min = bytes[3];
-      const sec = bytes[4];
-      const ms = bytes[5] | (bytes[6] << 8);
-      recordedMs = (min * 60000) + (sec * 1000) + ms;
-    }
-  } else if (qyRawState === 0x00 || qyRawState === 0x06) {
-    stateName = 'IDLE';
-  }
-  
-  return { state: stateName, recordedMs };
-}
-
-// --- 3. ฟังก์ชันประมวลผลสัญญาณร่วม (Unified Event Handler) ---
-function handleTimerSignal(parsed){
+function handleGanTimerEvent(event){
+  const value = event.target.value;
+  const parsed = parseGanTimerPacket(value);
   if(!parsed) return;
-  
-  switch(parsed.state){
+  const stateName = GAN_STATE[parsed.state];
+
+  switch(stateName){
     case 'HANDS_ON':
       display.classList.remove('go');
       if(inspectionEnabled){
@@ -1401,117 +1387,135 @@ function handleTimerSignal(parsed){
       }
       break;
     case 'IDLE':
-      // มีการกดรีเซ็ตหน้าเครื่องไทม์เมอร์
-      if(state === 'running'){
-        cancelAnimationFrame(rafId);
-        state = 'idle';
-        display.classList.remove('go');
-        display.textContent = '0.00';
-      }
+      break;
+    default:
       break;
   }
 }
 
-// การรับฟังก์ชัน Callback จาก Bluetooth Notifications
-function handleCharacteristicValueChanged(event){
+// QiYi Packet Parser & State Manager
+function handleQiYiTimerEvent(event) {
   const value = event.target.value;
-  let parsed = null;
+  const bytes = new Uint8Array(value.buffer);
   
-  if(connectedDeviceType === 'GAN'){
-    parsed = parseGanTimerPacket(value);
-  } else if(connectedDeviceType === 'QY'){
-    parsed = parseQyTimerPacket(value);
+  if (bytes.length < 6) return;
+
+  // ตรวจจับแพ็กเก็ตสถานะแป้นสัมผัสของ QiYi
+  // ไบต์ที่ 2 มักบอกสถานะการแตะแป้นเซนเซอร์: 
+  // 0x01 = แตะมือเดียว, 0x03 = แตะสองมือ (พร้อมอุ่นเครื่อง), 0x00 = ปล่อยมือ
+  const touchState = bytes[1]; 
+  
+  // โครงสร้างดึงเวลาจากข้อมูลโปรโตคอล QiYi Smart Timer
+  // ในหลายเฟิร์มแวร์ ไบต์ที่ 3-5 จะส่งข้อมูลเวลาสะสมดิบมา (Minutes, Seconds, Milliseconds)
+  const minutes = bytes[2] || 0;
+  const seconds = bytes[3] || 0;
+  const ms = (bytes[4] !== undefined) ? bytes[4] * 10 : 0; // มักส่งค่าหน่วย Centisecond (0-99) จึงคูณ 10 เป็น Milliseconds
+  const recordedMs = minutes * 60000 + seconds * 1000 + ms;
+
+  // ควบคุมพฤติกรรมการอัปเดตหน้าจอตามสถานะ QiYi
+  if (touchState === 0x03) { 
+    // แตะแป้นสองมือพร้อมกัน
+    display.classList.remove('go');
+    if (inspectionEnabled) {
+      if (state !== 'inspecting') startInspection();
+    } else {
+      clearInspectVisualClasses();
+      display.classList.add('ready');
+      display.textContent = '0.00';
+    }
+  } else if (touchState === 0x00 && (state === 'holding' || display.classList.contains('ready'))) {
+    // ปล่อยมือ (เริ่มทำงาน)
+    if (state === 'inspecting') stopInspection();
+    display.classList.remove('ready');
+    display.classList.add('go');
+    state = 'running';
+    startTime = Date.now();
+    tick();
+  } else if (recordedMs > 0 && state === 'running') {
+    // มีสถิติเวลาถูกส่งเข้ามา และระบบกำลังวิ่งจับเวลาอยู่ (หยุดทำงาน)
+    cancelAnimationFrame(rafId);
+    display.classList.remove('go');
+    
+    const penalty = pendingPenalty;
+    pendingPenalty = 0;
+    const total = recordedMs + penalty*1000;
+    display.textContent = formatTime(total) + (penalty ? ' (+2)' : '');
+    state = 'idle';
+    saveTime(total, false, penalty);
+    newScramble();
   }
-  
-  handleTimerSignal(parsed);
 }
 
-// --- 4. ฟังก์ชันหลักสำหรับเชื่อมต่ออุปกรณ์คู่สายตรง (Hybrid Connect Mechanism) ---
-async function connectSmartTimer(){
+async function connectGanTimer(){
   if(!navigator.bluetooth){
-    setBtStatus('เบราว์เซอร์นี้ไม่รองรับ Web Bluetooth API (กรุณาใช้ Chrome บน PC หรือ Android)', 'err');
+    setBtStatus('เบราว์เซอร์นี้ไม่รองรับ Web Bluetooth API (ลองใช้ Chrome บน Desktop/Android)', 'err');
     return;
   }
-  
   try{
-    setBtStatus('กำลังสแกนหาตัวจับเวลาไร้สายรอบตัว...');
-    
-    // ตั้งค่าฟิลเตอร์แบบฉลาด ค้นหาพร้อมกันทั้งค่าย GAN และ QY (รวมถึงชื่อรุ่นเฉพาะที่ csTimer ดึงข้อมูล)
-    btDevice = await navigator.bluetooth.requestDevice({
-      filters: [
-        { services: [GAN_SERVICE_UUID] },
-        { services: [QY_SERVICE_UUID] },
-        { namePrefix: 'GAN' },
-        { namePrefix: 'QY' },
-        { namePrefix: 'QIYI' },
-        { namePrefix: 'Smart' },
-        { namePrefix: 'Timer' }
-      ],
-      optionalServices: [GAN_SERVICE_UUID, QY_SERVICE_UUID]
-    });
-
-    // ตรวจหาประเภทอุปกรณ์ที่เชื่อมต่อจากโพรไฟล์ชื่อหรือ Service UUID ในเครื่อง
-    const deviceName = (btDevice.name || '').toUpperCase();
-    if(deviceName.includes('QY') || deviceName.includes('QIYI')){
-      connectedDeviceType = 'QY';
-    } else {
-      // โดยดีฟอลต์หากตรวจไม่ชัดเจนจะพิจารณาชุดคำสั่งเป็น GAN Protocol ก่อน
-      connectedDeviceType = 'GAN';
+    setBtStatus('กำลังค้นหาอุปกรณ์...');
+    try{
+      btDevice = await navigator.bluetooth.requestDevice({
+        filters: [
+          { services: [GAN_SERVICE_UUID] },
+          { services: [QIYI_SERVICE_UUID] },
+          { namePrefix: 'GAN' },
+          { namePrefix: 'GoCube' },
+          { namePrefix: 'MoYu' },
+          { namePrefix: 'QY-Timer' },
+          { namePrefix: 'QIYI' }
+        ],
+        optionalServices: [GAN_SERVICE_UUID, QIYI_SERVICE_UUID]
+      });
+    }catch(innerErr){
+      setBtStatus('ไม่พบด้วยตัวกรองเฉพาะ กำลังเปิดหาอุปกรณ์ BLE ทั้งหมด...');
+      btDevice = await navigator.bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: [GAN_SERVICE_UUID, QIYI_SERVICE_UUID]
+      });
     }
 
-    // ลงทะเบียนการดักจับสายหลุด
     btDevice.addEventListener('gattserverdisconnected', () => {
       btConnected = false;
-      connectedDeviceType = null;
-      btBtn.textContent = '🔗 เชื่อมต่อ Bluetooth Timer (GAN / QY Smart Timer)';
+      btBtn.textContent = '🔗 เชื่อมต่อ Bluetooth Timer';
       btBtn.classList.remove('connected');
-      setBtStatus('การเชื่อมต่อกับอุปกรณ์ถูกตัดขาด');
+      setBtStatus('การเชื่อมต่อถูกตัด');
     });
 
-    setBtStatus(`พบอุปกรณ์! กำลังผูกเซิร์ฟเวอร์หลัก (${connectedDeviceType} Mode)...`);
+    setBtStatus('กำลังเชื่อมต่อ GATT...');
     btServer = await btDevice.gatt.connect();
 
-    let targetServiceUuid = (connectedDeviceType === 'QY') ? QY_SERVICE_UUID : GAN_SERVICE_UUID;
-    let targetCharUuid = (connectedDeviceType === 'QY') ? QY_TIMER_NOTIFY_CHAR : GAN_TIMER_STATE_CHAR;
+    // เริ่มคัดแยกประเภทค่ายอุปกรณ์เพื่อดึง Service / Characteristic ที่ถูกต้อง
+    let targetServiceUuid = GAN_SERVICE_UUID;
+    let targetCharUuid = GAN_TIMER_STATE_CHAR;
+    connectedDeviceType = 'GAN';
 
-    // แก้ไขเคสกรณีชื่ออุปกรณ์ไม่ตรงกับ Service จริง (Fallback cross-check)
-    let service;
-    try {
-      service = await btServer.getPrimaryService(targetServiceUuid);
-    } catch(e) {
-      // หากเข้าเคสหลุดจากเงื่อนไขชื่อ ให้สลับท่อข้อมูลทันที
-      targetServiceUuid = (targetServiceUuid === QY_SERVICE_UUID) ? GAN_SERVICE_UUID : QY_SERVICE_UUID;
-      targetCharUuid = (targetCharUuid === QY_TIMER_NOTIFY_CHAR) ? GAN_TIMER_STATE_CHAR : QY_TIMER_NOTIFY_CHAR;
-      connectedDeviceType = (connectedDeviceType === 'QY') ? 'GAN' : 'QY';
-      service = await btServer.getPrimaryService(targetServiceUuid);
+    const deviceName = (btDevice.name || '').toUpperCase();
+    if (deviceName.includes('QIYI') || deviceName.includes('QY-') || deviceName.includes('QY-TIMER')) {
+      targetServiceUuid = QIYI_SERVICE_UUID;
+      targetCharUuid = QIYI_CHAR_UUID;
+      connectedDeviceType = 'QIYI';
     }
 
-    const characteristic = await service.getCharacteristic(targetCharUuid);
-    await characteristic.startNotifications();
-    characteristic.addEventListener('characteristicvaluechanged', handleCharacteristicValueChanged);
+    setBtStatus(`กำลังดึงข้อมูลบริการสำหรับ ${connectedDeviceType}...`);
+    const service = await btServer.getPrimaryService(targetServiceUuid);
+    const stateChar = await service.getCharacteristic(targetCharUuid);
 
-    // ทำการส่งรหัส Handshake ไปยังอุปกรณ์ QY เสมอเพื่อปลุกช่องสัญญาณ (อ้างอิงจากระบบย่อย csTimer)
-    // หากไม่ส่งไทม์เมอร์ค่ายนี้จะไม่ยอมคายข้อมูลออกมา
-    if(connectedDeviceType === 'QY'){
-      try {
-        // ค้นหา Write Characteristic ของ QY
-        const writeChar = await service.getCharacteristic(QY_TIMER_NOTIFY_CHAR);
-        // ส่งบิตส่งสัญญาณทักทายเครื่อง [0xFE, 0x01, 0x06, 0x07]
-        const wakeUpSignal = new Uint8Array([0xFE, 0x01, 0x06, 0x07]);
-        await writeChar.writeValue(wakeUpSignal);
-      } catch(writeErr){
-        console.warn('QY Handshake skip or non-writable:', writeErr);
-      }
+    await stateChar.startNotifications();
+    
+    // ผูก Event Listener แยกตามชุดคำสั่งของอุปกรณ์นั้นๆ
+    if (connectedDeviceType === 'QIYI') {
+      stateChar.addEventListener('characteristicvaluechanged', handleQiYiTimerEvent);
+    } else {
+      stateChar.addEventListener('characteristicvaluechanged', handleGanTimerEvent);
     }
 
     btConnected = true;
-    btBtn.textContent = '✅ เชื่อมต่อแล้ว: ' + (btDevice.name || `${connectedDeviceType} Timer`);
+    btBtn.textContent = '✅ เชื่อมต่อแล้ว: ' + (btDevice.name || 'Smart Timer');
     btBtn.classList.add('connected');
-    setBtStatus(`พร้อมระบบจับเวลา ${connectedDeviceType}! วางมือสองข้างลงบนบอร์ดเพื่อเริ่มได้เลย`, 'ok');
-
+    setBtStatus(`พร้อมใช้งาน (${connectedDeviceType} Mode) — วางมือทั้งสองข้างบนตัวจับเวลาเพื่อเริ่ม`, 'ok');
   }catch(err){
     console.error(err);
-    setBtStatus('เชื่อมต่อไม่สำเร็จ: ' + err.message + ' (ตรวจสอบสิทธิ์ Bluetooth หรือการเปิดซ้อนแอปอื่น)', 'err');
+    setBtStatus('เชื่อมต่อไม่สำเร็จ: ' + err.message + ' (ตรวจดูให้แน่ใจว่าอุปกรณ์ไม่ได้เชื่อมต่อแอปอื่นค้างอยู่)', 'err');
   }
 }
 
@@ -1520,7 +1524,7 @@ btBtn.addEventListener('click', async () => {
     btDevice.gatt.disconnect();
     return;
   }
-  await connectSmartTimer();
+  await connectGanTimer();
 });
 
 // ---------- Init ----------
@@ -1531,6 +1535,7 @@ renderHistory();
 renderStats();
 newScramble();
 
+// ---------- PWA: service worker registration ----------
 if('serviceWorker' in navigator){
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js').then(reg => {
@@ -1544,10 +1549,11 @@ if('serviceWorker' in navigator){
         });
       });
     }).catch(err => {
-      console.warn('Service worker ลงทะเบียนไม่สำเร็จ:', err);
+      console.warn('Service worker ลงทะเบียนไม่สำเร็จ (ต้องเปิดผ่าน https หรือ localhost):', err);
     });
   });
 }
+
 </script>
 </body>
 </html>
