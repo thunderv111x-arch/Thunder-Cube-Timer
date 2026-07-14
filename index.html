@@ -568,7 +568,6 @@ function generateScramble(len=20){
   return moves.join(' ');
 }
 
-// ---------- Generators for other cube types ----------
 function generateSimpleScramble(faces, mods, len){
   let moves = [];
   let last = '';
@@ -616,7 +615,6 @@ function generatePyraminxScramble(){
   return moves.join(' ');
 }
 
-// ข้อมูลสำหรับฝึกส้อม OLL, PLL, F2L
 const OLL_CASES = [
   "R U2 R2 F R F' U2 R' F R F'", "F R U R' U' F'", "f R U R' U' f'", "f R U R' U' f' U' F R U R' U' F'",
   "r U R' U' r' F R F'", "F' L' U' L U F", "f' L' U' L U f", "f' L' U' L U f U F' L' U' L U F"
@@ -682,17 +680,17 @@ function solvedFacelets(){
 function scrambleToFacelets(scrambleStr){
   let s = solvedFacelets();
   scrambleStr.trim().split(/\s+/).forEach(mv => {
-    if(!mv || mv.includes(':')) return; 
+    if(!mv || mv.includes(':')) return;
     s = applyPerm(s, getMovePerm(mv));
   });
   return s;
 }
 const FACE_COLOR = { U:'#f7f7f7', D:'#ffd500', F:'#00a352', B:'#1054c4', R:'#c8102e', L:'#ff6a00' };
+
 function renderCubeNet(scrambleStr){
   const facelets = scrambleToFacelets(scrambleStr);
   const idx = { U:0, R:9, F:18, D:27, L:36, B:45 };
-  const S = 22;
-  const gap = 2;
+  const S = 22; const gap = 2;
   const faceW = S*3 + gap*2;
   const layout = { U:[1,0], L:[0,1], F:[1,1], R:[2,1], B:[3,1], D:[1,2] };
   const totalW = faceW*4 + 20*3;
@@ -725,6 +723,7 @@ function getCurrentCubeType(){
   const sess = sessionsData.sessions[sessionsData.currentId];
   return (sess && sess.cubeType) || '3x3';
 }
+
 function newScramble(){
   const type = getCurrentCubeType();
   const gen = SCRAMBLERS[type] || SCRAMBLERS['3x3'];
@@ -769,90 +768,59 @@ function renderPuzzlePreview(type, scrambleStr){
   }
 }
 
-// 2x2: corner stickers only
 function render2x2Net(scrambleStr){
   const facelets = scrambleToFacelets(scrambleStr);
-  const mapping3to2 = [0,1,3,4,9,10,12,13,18,19,21,22,27,28,30,31,36,37,39,40,45,46,48,49];
-  const order = ['U','R','F','D','L','B'];
-  const S = 30;
-  const gap = 2;
+  const S = 30; const gap = 2;
   const faceW = S*2 + gap;
   const layout = { U:[1,0], L:[0,1], F:[1,1], R:[2,1], B:[3,1], D:[1,2] };
   const totalW = faceW*4 + 20*3;
   const totalH = faceW*3 + 20*2;
-  
   const fIdx = { U:0, R:9, F:18, D:27, L:36, B:45 };
   
-  function faceSvg(face, ox, oy){
-    let out = '';
-    const rows = [[0,1],[3,4]];
-    for(let r=0;r<2;r++){
-      for(let c=0;c<2;c++){
-        const baseIdx = fIdx[face] + (r*3) + c;
-        const color = FACE_COLOR[facelets[baseIdx]];
-        const x = ox + c*(S+gap);
-        const y = oy + r*(S+gap);
-        out += `<rect x="${x}" y="${y}" width="${S}" height="${S}" rx="4" fill="${color}" stroke="#0f1115" stroke-width="1.5"/>`;
-      }
-    }
-    return out;
-  }
   let svg = `<svg viewBox="0 0 ${totalW} ${totalH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:320px;height:auto;margin:0 auto;display:block;">`;
   Object.keys(layout).forEach(face => {
     const [gx, gy] = layout[face];
     const ox = gx*(faceW+20);
     const oy = gy*(faceW+20);
-    svg += faceSvg(face, ox, oy);
+    const base = fIdx[face];
+    // mapping 2x2 corners inside 3x3 array (0,1,3,4)
+    const map2x2 = [0,1,3,4];
+    for(let r=0;r<2;r++){
+      for(let c=0;c<2;c++){
+        const color = FACE_COLOR[facelets[base + map2x2[r*2+c]]];
+        const x = ox + c*(S+gap);
+        const y = oy + r*(S+gap);
+        svg += `<rect x="${x}" y="${y}" width="${S}" height="${S}" rx="4" fill="${color}" stroke="#0f1115" stroke-width="1.5"/>`;
+      }
+    }
   });
   svg += `</svg>`;
   document.getElementById('cubeNetWrap').innerHTML = svg;
 }
 
-// NxN Net Builder (4x4, 5x5) using Seeded PRNG for illustrative colors
 function renderNxNNet(N, scrambleStr){
-  const rand = hashSeed(scrambleStr);
-  const order = ['U','L','F','R','B','D'];
-  const baseColors = { U:'#f7f7f7', D:'#ffd500', F:'#00a352', B:'#1054c4', R:'#c8102e', L:'#ff6a00' };
-  
-  let grid = {};
-  order.forEach(f => {
-    grid[f] = [];
-    for(let i=0;i<N*N;i++) grid[f].push(baseColors[f]);
-  });
-  
-  // Apply visual variations based on scramble to ensure unique looks
-  const totalShuffles = N === 4 ? 25 : 35;
-  for(let k=0;k<totalShuffles;k++){
-    const f1 = order[Math.floor(rand()*6)];
-    const f2 = order[Math.floor(rand()*6)];
-    if(f1 !== f2){
-      const i1 = Math.floor(rand()*(N*N));
-      const i2 = Math.floor(rand()*(N*N));
-      const tmp = grid[f1][i1];
-      grid[f1][i1] = grid[f2][i2];
-      grid[f2][i2] = tmp;
-    }
-  }
-  
-  const S = Math.floor(80 / N);
-  const gap = 1;
+  let rand = hashSeed(scrambleStr);
+  const S = Math.floor(90/N); const gap = 1;
   const faceW = S*N + gap*(N-1);
   const layout = { U:[1,0], L:[0,1], F:[1,1], R:[2,1], B:[3,1], D:[1,2] };
   const totalW = faceW*4 + 20*3;
   const totalH = faceW*3 + 20*2;
   
-  let svg = `<svg viewBox="0 0 ${totalW} ${totalH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:360px;height:auto;margin:0 auto;display:block;">`;
+  let svg = `<svg viewBox="0 0 ${totalW} ${totalH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:380px;height:auto;margin:0 auto;display:block;">`;
   Object.keys(layout).forEach(face => {
     const [gx, gy] = layout[face];
     const ox = gx*(faceW+20);
     const oy = gy*(faceW+20);
     for(let r=0;r<N;r++){
       for(let c=0;c<N;c++){
-        const color = grid[face][r*N + c];
+        let color = FACE_COLOR[face];
+        if(rand() < 0.28){ // simulate scrambled mix
+          const keys = Object.keys(FACE_COLOR);
+          color = FACE_COLOR[keys[Math.floor(rand()*keys.length)]];
+        }
         const x = ox + c*(S+gap);
         const y = oy + r*(S+gap);
-        outRadius = N >= 5 ? 1 : 2;
-        svg += `<rect x="${x}" y="${y}" width="${S}" height="${S}" rx="${outRadius}" fill="${color}" stroke="#0f1115" stroke-width="1"/>`;
+        svg += `<rect x="${x}" y="${y}" width="${S}" height="${S}" rx="2" fill="${color}" stroke="#0f1115" stroke-width="1"/>`;
       }
     }
   });
@@ -860,146 +828,70 @@ function renderNxNNet(N, scrambleStr){
   document.getElementById('cubeNetWrap').innerHTML = svg;
 }
 
-// Pyraminx Visualizer using seed randomization
 function renderPyraminxNet(scrambleStr){
-  const rand = hashSeed(scrambleStr);
-  const sides = ['U','L','R','B'];
-  const colors = { U:'#ffd500', L:'#00a352', R:'#c8102e', B:'#1054c4' };
+  let rand = hashSeed(scrambleStr);
+  const colors = ['#ffd500','#00a352','#1054c4','#c8102e'];
+  let svg = `<svg viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:320px;height:auto;margin:0 auto;display:block;">`;
   
-  let stickers = {};
-  sides.forEach(s => {
-    stickers[s] = [];
-    for(let i=0;i<9;i++) stickers[s].push(colors[s]);
+  function tri(x1,y1,x2,y2,x3,y3,c){
+    return `<polygon points="${x1},${y1} ${x2},${y2} ${x3},${y3}" fill="${c}" stroke="#0f1115" stroke-width="1.5" stroke-linejoin="round"/>`;
+  }
+  // render center layout representation
+  const centers = [
+    [160,20, 100,120, 220,120],
+    [100,120, 40,190, 160,190],
+    [220,120, 160,190, 280,190]
+  ];
+  centers.forEach(pts => {
+    let c = colors[Math.floor(rand()*colors.length)];
+    svg += tri(pts[0],pts[1], pts[2],pts[3], pts[4],pts[5], c);
+    // sub pieces inner
+    let midX = (pts[0]+pts[2]+pts[4])/3;
+    let midY = (pts[1]+pts[3]+pts[4])/3;
   });
-  
-  for(let k=0;k<15;k++){
-    const s1 = sides[Math.floor(rand()*4)];
-    const s2 = sides[Math.floor(rand()*4)];
-    if(s1 !== s2){
-      const i1 = Math.floor(rand()*9);
-      const i2 = Math.floor(rand()*9);
-      const tmp = stickers[s1][i1];
-      stickers[s1][i1] = stickers[s2][i2];
-      stickers[s2][i2] = tmp;
-    }
-  }
-  
-  let svg = `<svg viewBox="0 0 320 240" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:300px;height:auto;margin:0 auto;display:block;">`;
-  function drawTri(x1,y1,x2,y2,x3,y3,color){
-    return `<polygon points="${x1},${y1} ${x2},${y2} ${x3},${y3}" fill="${color}" stroke="#0f1115" stroke-width="1.5" stroke-linejoin="round"/>`;
-  }
-  
-  // Center Face (Front View representation)
-  svg += drawTri(160,20, 80,160, 240,160, stickers['U'][4]);
-  svg += drawTri(160,20, 120,90, 200,90, stickers['U'][0]);
-  svg += drawTri(120,90, 80,160, 160,160, stickers['L'][0]);
-  svg += drawTri(200,90, 160,160, 240,160, stickers['R'][0]);
-  
-  // Outer wings representation
-  svg += drawTri(80,160, 240,160, 160,230, stickers['B'][4]);
-  svg += drawTri(80,160, 40,90, 120,90, stickers['L'][8]);
-  svg += drawTri(240,160, 280,90, 200,90, stickers['R'].reverse()[8]);
-  
   svg += `</svg>`;
   document.getElementById('cubeNetWrap').innerHTML = svg;
 }
 
-// Skewb View Simulator
 function renderSkewbNet(scrambleStr){
-  const rand = hashSeed(scrambleStr);
-  const faces = ['U','D','L','R','F','B'];
-  const baseColors = { U:'#f7f7f7', D:'#ffd500', F:'#00a352', B:'#1054c4', R:'#c8102e', L:'#ff6a00' };
-  
-  let config = {};
+  let rand = hashSeed(scrambleStr);
+  let svg = `<svg viewBox="0 0 260 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:280px;height:auto;margin:0 auto;display:block;">`;
+  const faces = [
+    {cx:70, cy:60, name:'L'}, {cx:130, cy:60, name:'U'}, {cx:190, cy:60, name:'R'},
+    {cx:70, cy:130, name:'D'}, {cx:130, cy:130, name:'F'}, {cx:190, cy:130, name:'B'}
+  ];
   faces.forEach(f => {
-    config[f] = { center: baseColors[f], corners: [baseColors[f], baseColors[f], baseColors[f], baseColors[f]] };
-  });
-  
-  for(let k=0;k<12;k++){
-    const f1 = faces[Math.floor(rand()*6)];
-    const f2 = faces[Math.floor(rand()*6)];
-    if(f1 !== f2){
-      const c1 = Math.floor(rand()*4);
-      const c2 = Math.floor(rand()*4);
-      const tmp = config[f1].corners[c1];
-      config[f1].corners[c1] = config[f2].corners[c2];
-      config[f2].corners[c2] = tmp;
+    const r = 24;
+    const x = f.cx, y = f.cy;
+    let cc = FACE_COLOR[f.name] || '#fff';
+    // Square background center
+    svg += `<rect x="${x-r}" y="${y-r}" width="${r*2}" height="${r*2}" fill="${cc}" stroke="#0f1115" stroke-width="1.5"/>`;
+    // Diagonal lines to show skewb cuts
+    svg += `<line x1="${x-r}" y1="${y-r}" x2="${x+r}" y2="${y+r}" stroke="#0f1115" stroke-width="1.5"/>`;
+    svg += `<line x1="${x+r}" y1="${y-r}" x2="${x-r}" y2="${y+r}" stroke="#0f1115" stroke-width="1.5"/>`;
+    // Corner color drops simulation
+    for(let d=0; d<4; d++){
+      if(rand() < 0.35){
+        let rc = FACE_COLOR[Object.keys(FACE_COLOR)[Math.floor(rand()*6)]];
+        let pts = '';
+        if(d===0) pts=`${x-r},${y-r} ${x},${y} ${x-r},${y}`;
+        if(d===1) pts=`${x+r},${y-r} ${x},${y} ${x},${y-r}`;
+        if(d===2) pts=`${x+r},${y+r} ${x},${y} ${x+r},${y}`;
+        if(d===3) pts=`${x-r},${y+r} ${x},${y} ${x},${y+r}`;
+        svg += `<polygon points="${pts}" fill="${rc}" stroke="#0f1115" stroke-width="0.5"/>`;
+      }
     }
-  }
-  
-  const S = 50;
-  const layout = { U:[1,0], L:[0,1], F:[1,1], R:[2,1], B:[3,1], D:[1,2] };
-  let svg = `<svg viewBox="0 0 280 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:320px;height:auto;margin:0 auto;display:block;">`;
-  
-  Object.keys(layout).forEach(face => {
-    const [gx, gy] = layout[face];
-    const ox = gx*(S+14) + 10;
-    const oy = gy*(S+14) + 10;
-    
-    // Background frame
-    svg += `<rect x="${ox}" y="${oy}" width="${S}" height="${S}" rx="6" fill="#0f1115"/>`;
-    // Center diamond
-    const hs = S/2;
-    svg += `<polygon points="${ox+hs},${oy} ${ox+S},${oy+hs} ${ox+hs},${oy+S} ${ox},${oy+hs}" fill="${config[face].center}" stroke="#0f1115" stroke-width="1"/>`;
-    // Corner triangles
-    svg += `<polygon points="${ox},${oy} ${ox+hs},${oy} ${ox},${oy+hs}" fill="${config[face].corners[0]}" stroke="#0f1115" stroke-width="1"/>`;
-    svg += `<polygon points="${ox+S},${oy} ${ox+hs},${oy} ${ox+S},${oy+hs}" fill="${config[face].corners[1]}" stroke="#0f1115" stroke-width="1"/>`;
-    svg += `<polygon points="${ox+S},${oy+S} ${ox+hs},${oy+S} ${ox+S},${oy+hs}" fill="${config[face].corners[2]}" stroke="#0f1115" stroke-width="1"/>`;
-    svg += `<polygon points="${ox},${oy+S} ${ox+hs},${oy+S} ${ox},${oy+hs}" fill="${config[face].corners[3]}" stroke="#0f1115" stroke-width="1"/>`;
   });
-  
   svg += `</svg>`;
   document.getElementById('cubeNetWrap').innerHTML = svg;
 }
 
-// ---------- State management & Core Timer logic ----------
-let state = 'idle'; // idle, inspecting, running
-let startTime = 0;
-let elapsed = 0;
-let timerInterval = null;
-let rafId = null;
 
-let times = []; 
-let sessionsData = {
-  currentId: 'default',
-  sessions: {
-    'default': { name: 'Session 1', times: [], cubeType: '3x3' }
-  }
-};
-
-let inspectionEnabled = true;
-let inspectionTime = 15;
-let inspectionInterval = null;
-let pendingPenalty = 0; // 0=none, 1=+2, 2=DNF
-
-const display = document.getElementById('timerDisplay');
-const inspectionToggle = document.getElementById('inspectionToggle');
-const voiceToggle = document.getElementById('voiceToggle');
-const themeSelect = document.getElementById('themeSelect');
-const cubeTypeSelect = document.getElementById('cubeTypeSelect');
-
-const sessionSelect = document.getElementById('sessionSelect');
-const newSessionBtn = document.getElementById('newSessionBtn');
-const renameSessionBtn = document.getElementById('renameSessionBtn');
-const deleteSessionBtn = document.getElementById('deleteSessionBtn');
-
-// ---------- MULTI-TIMER BLUETOOTH CONFIG ----------
-const TIMER_CONFIG = {
-  SERVICE: {
-    GAN: '0000fee7-0000-1000-8000-00805f9b34fb',   // GAN Service UUID
-    QIYI: '6e400001-b5a3-f393-e0a9-e50e24dcca9e',  // QiYi NUS Service UUID
-  },
-  CHARACTERISTIC: {
-    GAN_TIME: '000036f5-0000-1000-8000-00805f9b34fb', // GAN Time characteristic
-    QIYI_RX: '6e400002-b5a3-f393-e0a9-e50e24dcca9e',
-    QIYI_TX: '6e400003-b5a3-f393-e0a9-e50e24dcca9e',  // QiYi TX Notify characteristic
-  }
-};
-
+// ---------- MULTI-TIMER BLUETOOTH DYNAMIC CONFIG ----------
 let btDevice = null;
 let btServer = null;
 let btConnected = false;
-let connectedBrand = null; // 'GAN' หรือ 'QIYI'
+let connectedBrand = null; 
 
 const btBtn = document.getElementById('btConnectBtn');
 const btStatus = document.getElementById('btStatus');
@@ -1009,7 +901,6 @@ function setBtStatus(text, cls){
   btStatus.className = cls || '';
 }
 
-// ฟังก์ชันศูนย์รวมปรับปรุงสถานะการจับเวลาส่วนกลาง
 function onTimerStatusChanged(timerState, recordedMs) {
   switch(timerState) {
     case 'HANDS_ON':
@@ -1047,7 +938,6 @@ function onTimerStatusChanged(timerState, recordedMs) {
   }
 }
 
-// ถอดรหัสชุดข้อมูลจากค่าย GAN
 function parseGanTimerPacket(dataView){
   const bytes = new Uint8Array(dataView.buffer);
   if(bytes.length < 3) return null;
@@ -1070,7 +960,7 @@ function parseGanTimerPacket(dataView){
   return { timerState, recordedMs };
 }
 
-// ถอดรหัสชุดข้อมูลจากค่าย QiYi (Nordic UART Service Protocol)
+// ฟังก์ชันแกะข้อมูลชุดใหม่สำหรับ QiYi Smart Timer V2 (พัฒนาตาม UUID จากภาพ nRF)
 function parseQiyiTimerPacket(dataView){
   const bytes = new Uint8Array(dataView.buffer);
   if(bytes.length < 2) return null;
@@ -1078,6 +968,7 @@ function parseQiyiTimerPacket(dataView){
   let timerState = null;
   const cmd = bytes[0];
   
+  // โครงสร้างคำสั่งสถานะปกติของบอร์ด QiYi
   if (cmd === 0x01) timerState = 'HANDS_ON';
   else if (cmd === 0x02) timerState = 'RUNNING';
   else if (cmd === 0x03) timerState = 'STOPPED';
@@ -1092,7 +983,6 @@ function parseQiyiTimerPacket(dataView){
   return { timerState, recordedMs };
 }
 
-// รับค่า Notification Event จากฮาร์ดแวร์บลูทูธ
 function handleTimerDataNotification(event){
   const value = event.target.value;
   let result = null;
@@ -1118,13 +1008,17 @@ async function connectSmartTimer(){
     
     btDevice = await navigator.bluetooth.requestDevice({
       filters: [
-        { services: [TIMER_CONFIG.SERVICE.GAN] },
-        { services: [TIMER_CONFIG.SERVICE.QIYI] },
         { namePrefix: 'GAN' },
         { namePrefix: 'QIYI' },
-        { namePrefix: 'QY-' }
+        { namePrefix: 'QY-' },
+        { namePrefix: 'Smart' },
+        { namePrefix: 'Timer' }
       ],
-      optionalServices: [TIMER_CONFIG.SERVICE.GAN, TIMER_CONFIG.SERVICE.QIYI]
+      optionalServices: [
+        '5833ff01-9b8b-5191-6142-22a4536ef123', // QiYi Smart Timer V2 Service UUID ชุดหลัก
+        '6e400001-b5a3-f393-e0a9-e50e24dcca9e', // QiYi V1 Base Service
+        '0000fee7-0000-1000-8000-00805f9b34fb'  // GAN Base Service
+      ]
     });
 
     btDevice.addEventListener('gattserverdisconnected', () => {
@@ -1138,31 +1032,70 @@ async function connectSmartTimer(){
     setBtStatus('กำลังเชื่อมต่อเซิร์ฟเวอร์อุปกรณ์...');
     btServer = await btDevice.gatt.connect();
 
-    let service = null;
-    let charUuid = null;
+    setBtStatus('กำลังค้นหาบริการและช่องสัญญาณ...');
     
+    let targetService = null;
+    let targetChar = null;
+
+    // 1. ตรวจสอบเงื่อนไขแรก: ตรวจจับสัญญาณเครื่อง QiYi V2 (จากหน้าจอแอป nRF Connect)
     try {
-      service = await btServer.getPrimaryService(TIMER_CONFIG.SERVICE.GAN);
-      charUuid = TIMER_CONFIG.CHARACTERISTIC.GAN_TIME;
-      connectedBrand = 'GAN';
-    } catch(e) {
-      service = await btServer.getPrimaryService(TIMER_CONFIG.SERVICE.QIYI);
-      charUuid = TIMER_CONFIG.CHARACTERISTIC.QIYI_TX;
+      targetService = await btServer.getPrimaryService('5833ff01-9b8b-5191-6142-22a4536ef123');
+      targetChar = await targetService.getCharacteristic('5833ff03-9b8b-5191-6142-22a4536ef123'); // ดึงค่าช่อง Notify
       connectedBrand = 'QIYI';
+      console.log('พบอุปกรณ์ QiYi V2 Smart Timer สำเร็จ!');
+    } catch(e) {
+      console.log('ไม่ใช่ QiYi V2, กำลังลองตรวจสอบมาตรฐานรุ่นอื่น...');
     }
 
-    setBtStatus(`ค้นพบระบบ ${connectedBrand}! กำลังเปิดฟังก์ชันแจ้งเตือน...`);
-    const dataChar = await service.getCharacteristic(charUuid);
-    await dataChar.startNotifications();
-    dataChar.addEventListener('characteristicvaluechanged', handleTimerDataNotification);
+    // 2. ถ้าไม่ใช่ V2 ให้ทำการตรวจจับอุปกรณ์รูปแบบเดิม (QiYi V1 หรือ GAN)
+    if(!targetChar) {
+      try {
+        if(btDevice.name && (btDevice.name.includes('QIYI') || btDevice.name.includes('QY-'))) {
+          targetService = await btServer.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
+          targetChar = await targetService.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e');
+          connectedBrand = 'QIYI';
+        } else {
+          targetService = await btServer.getPrimaryService('0000fee7-0000-1000-8000-00805f9b34fb');
+          targetChar = await targetService.getCharacteristic('000036f5-0000-1000-8000-00805f9b34fb');
+          connectedBrand = 'GAN';
+        }
+      } catch(e) {
+        // 3. Fallback: ในกรณีชิปตัวจับเวลาหลุดมาตรฐาน ให้ไล่สุ่มค้นหาช่อง Notify อัตโนมัติ
+        const services = await btServer.getPrimaryServices();
+        for(let service of services) {
+          try {
+            const characteristics = await service.getCharacteristics();
+            for(let char of characteristics) {
+              if(char.properties.notify) {
+                targetService = service;
+                targetChar = char;
+                connectedBrand = (btDevice.name && (btDevice.name.includes('GAN'))) ? 'GAN' : 'QIYI';
+                break;
+              }
+            }
+          } catch(err) { continue; }
+          if(targetChar) break;
+        }
+      }
+    }
+
+    if(!targetChar) {
+      throw new Error('ไม่พบช่องสัญญาณส่งข้อมูล (Notify) ที่สามารถเปิดรับข้อมูลเวลาได้');
+    }
+
+    setBtStatus(`เชื่อมต่อสำเร็จ! กำลังสมัครรับข้อมูลจาก [${targetChar.uuid.slice(0,8)}]...`);
+    
+    await targetChar.startNotifications();
+    targetChar.addEventListener('characteristicvaluechanged', handleTimerDataNotification);
 
     btConnected = true;
     btBtn.textContent = `✅ เชื่อมต่อแล้ว: ${btDevice.name || connectedBrand + ' Timer'}`;
     btBtn.classList.add('connected');
-    setBtStatus(`เชื่อมต่อสำเร็จ (${connectedBrand}) — วางสองมือลงบนหน้าแผงควบคุมเพื่อพร้อมใช้งาน`, 'ok');
+    setBtStatus(`เชื่อมต่อสำเร็จ (${connectedBrand}) — วางสองมือบนเครื่องจับเวลาเพื่อเริ่มใช้งาน`, 'ok');
+
   }catch(err){
     console.error(err);
-    setBtStatus('เชื่อมต่อไม่สำเร็จ: ' + err.message + ' (ถ้าอยู่บน Apps Script หรือ iframe ให้ลองเปิดตรงหรือทำหน้าเว็บบน GitHub Pages)', 'err');
+    setBtStatus('เชื่อมต่อไม่สำเร็จ: ' + err.message, 'err');
   }
 }
 
@@ -1174,33 +1107,46 @@ btBtn.addEventListener('click', async () => {
   await connectSmartTimer();
 });
 
+
 // ---------- Local Storage & Session Systems ----------
+let sessionsData = {
+  currentId: "session_1",
+  sessions: {
+    "session_1": { name: "Session 1", cubeType: "3x3", times: [] }
+  }
+};
+
+const sessionSelect = document.getElementById('sessionSelect');
+const cubeTypeSelect = document.getElementById('cubeTypeSelect');
+
 function loadSessions(){
-  const saved = localStorage.getItem('rubik_sessions_v3');
+  const saved = localStorage.getItem('rubikSessionsData');
   if(saved){
     try{
       sessionsData = JSON.parse(saved);
-      // ตรวจสอบความสมบูรณ์โครงสร้าง
-      if(!sessionsData.sessions) throw new Error();
+      if(!sessionsData.sessions || Object.keys(sessionsData.sessions).length === 0){
+        resetSessionsData();
+      }
     }catch(e){
-      resetToDefaultSession();
+      resetSessionsData();
     }
   } else {
-    resetToDefaultSession();
+    resetSessionsData();
   }
-  times = sessionsData.sessions[sessionsData.currentId].times || [];
 }
 
-function resetToDefaultSession(){
+function resetSessionsData(){
   sessionsData = {
-    currentId: 'default',
-    sessions: { 'default': { name: 'Session 1', times: [], cubeType: '3x3' } }
+    currentId: "session_1",
+    sessions: {
+      "session_1": { name: "Session 1", cubeType: "3x3", times: [] }
+    }
   };
+  saveSessionsToStorage();
 }
 
 function saveSessionsToStorage(){
-  sessionsData.sessions[sessionsData.currentId].times = times;
-  localStorage.setItem('rubik_sessions_v3', JSON.stringify(sessionsData));
+  localStorage.setItem('rubikSessionsData', JSON.stringify(sessionsData));
 }
 
 function populateSessionSelect(){
@@ -1215,67 +1161,15 @@ function populateSessionSelect(){
 }
 
 function syncCubeTypeSelect(){
-  const currentType = getCurrentCubeType();
-  cubeTypeSelect.value = currentType;
+  const curSess = sessionsData.sessions[sessionsData.currentId];
+  if(curSess){
+    cubeTypeSelect.value = curSess.cubeType || '3x3';
+  }
 }
 
 sessionSelect.addEventListener('change', (e) => {
-  sessionsData.sessions[sessionsData.currentId].times = times; 
   sessionsData.currentId = e.target.value;
-  times = sessionsData.sessions[sessionsData.currentId].times || [];
-  
-  syncCubeTypeSelect();
-  newScramble();
-  renderHistory();
-  renderStats();
-});
-
-newSessionBtn.addEventListener('click', () => {
-  const name = prompt('กรุณากรอกชื่อ Session ใหม่:');
-  if(!name || !name.trim()) return;
-  const newId = 'sess_' + Date.now();
-  sessionsData.sessions[newId] = {
-    name: name.trim(),
-    times: [],
-    cubeType: cubeTypeSelect.value
-  };
-  sessionsData.sessions[sessionsData.currentId].times = times;
-  sessionsData.currentId = newId;
-  times = [];
-  
   saveSessionsToStorage();
-  populateSessionSelect();
-  newScramble();
-  renderHistory();
-  renderStats();
-});
-
-renameSessionBtn.addEventListener('click', () => {
-  const currentSession = sessionsData.sessions[sessionsData.currentId];
-  const oldName = currentSession.name;
-  const newName = prompt('แก้ไขชื่อ Session:', oldName);
-  if(!newName || !newName.trim() || newName === oldName) return;
-  
-  currentSession.name = newName.trim();
-  saveSessionsToStorage();
-  populateSessionSelect();
-});
-
-deleteSessionBtn.addEventListener('click', () => {
-  const keys = Object.keys(sessionsData.sessions);
-  if(keys.length <= 1){
-    alert('ไม่สามารถลบได้เนื่องจากระบบต้องการเซสชันใช้งานอย่างน้อย 1 รายการ');
-    return;
-  }
-  if(!confirm(`คุณต้องการลบเซสชัน "${sessionsData.sessions[sessionsData.currentId].name}" ใช่หรือไม่? (ข้อมูลเวลาทั้งหมดในเซสชันนี้จะหายไป)`)) return;
-  
-  delete sessionsData.sessions[sessionsData.currentId];
-  const remainKeys = Object.keys(sessionsData.sessions);
-  sessionsData.currentId = remainKeys[0];
-  times = sessionsData.sessions[sessionsData.currentId].times || [];
-  
-  saveSessionsToStorage();
-  populateSessionSelect();
   syncCubeTypeSelect();
   newScramble();
   renderHistory();
@@ -1283,61 +1177,156 @@ deleteSessionBtn.addEventListener('click', () => {
 });
 
 cubeTypeSelect.addEventListener('change', (e) => {
-  sessionsData.sessions[sessionsData.currentId].cubeType = e.target.value;
-  saveSessionsToStorage();
-  newScramble();
+  const curSess = sessionsData.sessions[sessionsData.currentId];
+  if(curSess){
+    curSess.cubeType = e.target.value;
+    saveSessionsToStorage();
+    newScramble();
+    renderHistory();
+    renderStats();
+  }
 });
 
-// ---------- WCA Inspection System ----------
-inspectionToggle.addEventListener('change', (e) => {
-  inspectionEnabled = e.target.checked;
-  localStorage.setItem('rubikTimerInspectionEnabled', inspectionEnabled);
+document.getElementById('newSessionBtn').addEventListener('click', () => {
+  const name = prompt("ระบุชื่อ Session ใหม่:");
+  if(!name) return;
+  const id = "session_" + Date.now();
+  sessionsData.sessions[id] = {
+    name: name,
+    cubeType: cubeTypeSelect.value,
+    times: []
+  };
+  sessionsData.currentId = id;
+  saveSessionsToStorage();
+  populateSessionSelect();
+  newScramble();
+  renderHistory();
+  renderStats();
 });
-if(localStorage.getItem('rubikTimerInspectionEnabled') !== null){
-  inspectionEnabled = localStorage.getItem('rubikTimerInspectionEnabled') === 'true';
-  inspectionToggle.checked = inspectionEnabled;
+
+document.getElementById('renameSessionBtn').addEventListener('click', () => {
+  const curSess = sessionsData.sessions[sessionsData.currentId];
+  if(!curSess) return;
+  const newName = prompt("เปลี่ยนชื่อ Session เป็น:", curSess.name);
+  if(!newName) return;
+  curSess.name = newName;
+  saveSessionsToStorage();
+  populateSessionSelect();
+});
+
+document.getElementById('deleteSessionBtn').addEventListener('click', () => {
+  const keys = Object.keys(sessionsData.sessions);
+  if(keys.length <= 1){
+    alert("ไม่สามารถลบได้ ต้องเหลืออย่างน้อย 1 Session");
+    return;
+  }
+  if(!confirm("ยืนยันการลบ Session นี้ ข้อมูลเวลาจะหายทั้งหมด?")) return;
+  
+  delete sessionsData.sessions[sessionsData.currentId];
+  sessionsData.currentId = Object.keys(sessionsData.sessions)[0];
+  saveSessionsToStorage();
+  populateSessionSelect();
+  syncCubeTypeSelect();
+  newScramble();
+  renderHistory();
+  renderStats();
+});
+
+
+// ---------- Core Timer Logic ----------
+let state = 'idle'; 
+let startTime = 0;
+let elapsed = 0;
+let rafId = null;
+
+let inspectionEnabled = true;
+let inspectionInterval = null;
+let inspectionLeft = 15;
+let pendingPenalty = 0; 
+
+const display = document.getElementById('timerDisplay');
+const insToggle = document.getElementById('inspectionToggle');
+
+// โหลดการตั้งค่าเริ่มต้นของอินสเปกชัน
+if(localStorage.getItem('wcaInspectionEnabled') !== null){
+  inspectionEnabled = localStorage.getItem('wcaInspectionEnabled') === 'true';
+  insToggle.checked = inspectionEnabled;
+}
+insToggle.addEventListener('change', (e) => {
+  inspectionEnabled = e.target.checked;
+  localStorage.setItem('wcaInspectionEnabled', inspectionEnabled);
+});
+
+function formatTime(ms) {
+  if (ms === 'DNF') return 'DNF';
+  if (ms < 0) return '0.00';
+  const totalSecs = ms / 1000;
+  if (totalSecs < 60) {
+    return totalSecs.toFixed(2);
+  }
+  const mins = Math.floor(totalSecs / 60);
+  const secs = (totalSecs % 60).toFixed(2);
+  return `${mins}:${secs.padStart(5, '0')}`;
+}
+
+function speakTime(ms, isDnf, penalty) {
+  if (!('speechSynthesis' in window)) return;
+  if (!document.getElementById('voiceToggle').checked) return;
+
+  window.speechSynthesis.cancel(); 
+  let text = '';
+  if (isDnf) {
+    text = 'ดีเอ็นเอฟ';
+  } else {
+    let finalMs = ms;
+    const totalSec = finalMs / 1000;
+    if (totalSec < 60) {
+      text = totalSec.toFixed(2) + ' วินาที';
+    } else {
+      const m = Math.floor(totalSec / 60);
+      const s = (totalSec % 60).toFixed(2);
+      text = `${m} นาที ${s} วินาที`;
+    }
+  }
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'th-TH';
+  utterance.rate = 1.2; 
+  window.speechSynthesis.speak(utterance);
+}
+
+function tick() {
+  elapsed = Date.now() - startTime;
+  display.textContent = formatTime(elapsed);
+  rafId = requestAnimationFrame(tick);
 }
 
 function startInspection(){
   state = 'inspecting';
-  inspectionTime = 15;
+  inspectionLeft = 15;
+  pendingPenalty = 0;
   display.className = 'inspecting';
-  display.textContent = inspectionTime;
-  
-  // ล้างการสั่น/เสียงเดิม
-  if('vibrate' in navigator) navigator.vibrate([100]);
+  display.textContent = inspectionLeft;
   
   clearInterval(inspectionInterval);
   inspectionInterval = setInterval(() => {
-    inspectionTime--;
-    if(inspectionTime > 7){
+    inspectionLeft--;
+    if(inspectionLeft > 7){
       display.className = 'inspecting';
-      display.textContent = inspectionTime;
-    } else if(inspectionTime > 3){
+      display.textContent = inspectionLeft;
+    } else if(inspectionLeft > 0){
       display.className = 'inspect-warn';
-      display.textContent = inspectionTime;
-      if(inspectionTime === 7 && voiceToggle.checked) speakText('7 seconds');
-    } else if(inspectionTime > 0){
-      display.className = 'inspect-danger';
-      display.textContent = inspectionTime;
-      if(inspectionTime === 3 && voiceToggle.checked) speakText('3 seconds');
-    } else if(inspectionTime === 0){
+      display.textContent = inspectionLeft;
+    } else if(inspectionLeft > -2){
+      // เกิน 15 วิ แต่ไม่เกิน 17 วิ ได้ +2 penalty
       display.className = 'inspect-danger';
       display.textContent = '+2';
-      pendingPenalty = 1; // +2
-    } else if(inspectionTime <= -2){
-      // เกิน 17 วินาที = DNF
+      pendingPenalty = 2;
+    } else {
+      // เกิน 17 วิ ถือเป็น DNF
       clearInterval(inspectionInterval);
-      display.className = 'dnf';
+      display.className = 'inspect-danger';
       display.textContent = 'DNF';
-      pendingPenalty = 2; // DNF
-      
-      // บันทึกข้อมูลแบบออโต้หากเปิดเชื่อมแบบบลูทูธไว้แล้วไม่ได้กด
-      if(btConnected){
-        saveTime(0, true, 2);
-        state = 'idle';
-        newScramble();
-      }
+      pendingPenalty = 'DNF';
     }
   }, 1000);
 }
@@ -1346,521 +1335,501 @@ function stopInspection(){
   clearInterval(inspectionInterval);
 }
 
-function clearInspectVisualClasses(){
-  display.classList.remove('inspecting', 'inspect-warn', 'inspect-danger', 'ready', 'go');
+function saveTime(ms, isDnf=false, penalty=0){
+  const curSess = sessionsData.sessions[sessionsData.currentId];
+  if(!curSess) return;
+  curSess.times.unshift({
+    id: Date.now(),
+    ms: ms,
+    dnf: isDnf,
+    penalty: penalty, 
+    scramble: currentScramble,
+    date: new Date().toLocaleString('th-TH')
+  });
+  saveSessionsToStorage();
+  renderHistory();
+  renderStats();
+  
+  // สั่งอ่านเวลาออกเสียงพูดหลังบันทึกเสร็จ
+  speakTime(ms, isDnf, penalty);
 }
 
-// ---------- Text to Speech Helper ----------
-function speakTimeText(ms, isDnf, isPenalty){
-  if(!voiceToggle.checked) return;
-  if(isDnf){
-    speakText('ดีเอ็นเอฟ');
+// คีย์บอร์ดและหน้าจอสัมผัส (สเปซบาร์) คอนโทรลเลอร์
+let spacePressed = false;
+let readyTimeout = null;
+
+window.addEventListener('keydown', (e) => {
+  if (e.code !== 'Space') return;
+  // บล็อกสเปซบาร์ไม่ให้เลื่อนจอลงล่าง
+  if (e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') return;
+  e.preventDefault();
+  
+  if (spacePressed) return;
+  spacePressed = true;
+
+  if (state === 'running') {
+    // กดหยุดเวลา
+    cancelAnimationFrame(rafId);
+    state = 'idle';
+    const finalMs = elapsed + (pendingPenalty === 2 ? 2000 : 0);
+    const isDnf = (pendingPenalty === 'DNF');
+    saveTime(finalMs, isDnf, pendingPenalty === 2 ? 2 : 0);
+    display.classList.remove('go');
+    if (isDnf) display.textContent = 'DNF';
+    else display.textContent = formatTime(finalMs) + (pendingPenalty === 2 ? ' (+2)' : '');
+    newScramble();
+  } else if (state === 'idle' || state === 'inspecting') {
+    // เตรียมพร้อมสตาร์ท
+    display.className = 'ready';
+    if (!inspectionEnabled) {
+      readyTimeout = setTimeout(() => {
+        display.className = 'ready';
+      }, 300);
+    }
+  }
+});
+
+window.addEventListener('keyup', (e) => {
+  if (e.code !== 'Space') return;
+  spacePressed = false;
+  clearTimeout(readyTimeout);
+
+  if (state === 'idle' && !inspectionEnabled) {
+    // เริ่มจับทันทีถ้าปิดดูลูก
+    display.className = 'go';
+    state = 'running';
+    startTime = Date.now();
+    tick();
+  } else if (state === 'idle' && inspectionEnabled) {
+    // เข้าสู่โหมดดูลูก 15 วินาที
+    startInspection();
+  } else if (state === 'inspecting') {
+    // สตาร์ทจับเวลาจากโหมดดูลูก
+    stopInspection();
+    if (pendingPenalty === 'DNF') {
+      // ปล่อยมือช้าเกิน 17 วิ บันทึก DNF ทันที
+      state = 'idle';
+      saveTime(0, true, 0);
+      newScramble();
+    } else {
+      display.className = 'go';
+      state = 'running';
+      startTime = Date.now();
+      tick();
+    }
+  }
+});
+
+// รองรับ Touch Event บนมือถือ (กดค้างที่หน้าจอตรงส่วนเลขจับเวลา)
+let touchStartTarget = null;
+display.addEventListener('touchstart', (e) => {
+  if (e.target !== display) return;
+  e.preventDefault();
+  touchStartTarget = e.target;
+  
+  if (state === 'running') {
+    cancelAnimationFrame(rafId);
+    state = 'idle';
+    const finalMs = elapsed + (pendingPenalty === 2 ? 2000 : 0);
+    const isDnf = (pendingPenalty === 'DNF');
+    saveTime(finalMs, isDnf, pendingPenalty === 2 ? 2 : 0);
+    display.classList.remove('go');
+    if (isDnf) display.textContent = 'DNF';
+    else display.textContent = formatTime(finalMs) + (pendingPenalty === 2 ? ' (+2)' : '');
+    newScramble();
+  } else if (state === 'idle' || state === 'inspecting') {
+    display.className = 'ready';
+  }
+});
+
+display.addEventListener('touchend', (e) => {
+  if (e.target !== display) return;
+  e.preventDefault();
+  
+  if (state === 'idle' && !inspectionEnabled) {
+    display.className = 'go';
+    state = 'running';
+    startTime = Date.now();
+    tick();
+  } else if (state === 'idle' && inspectionEnabled) {
+    startInspection();
+  } else if (state === 'inspecting') {
+    stopInspection();
+    if (pendingPenalty === 'DNF') {
+      state = 'idle';
+      saveTime(0, true, 0);
+      newScramble();
+    } else {
+      display.className = 'go';
+      state = 'running';
+      startTime = Date.now();
+      tick();
+    }
+  }
+});
+
+
+// ---------- History Render & Manual Adjustments ----------
+const historyList = document.getElementById('historyList');
+const penaltyLastBtn = document.getElementById('penaltyLastBtn');
+const dnfLastBtn = document.getElementById('dnfLastBtn');
+
+function renderHistory(){
+  const curSess = sessionsData.sessions[sessionsData.currentId];
+  if(!curSess || curSess.times.length === 0){
+    historyList.innerHTML = '<div class="empty">ยังไม่มีข้อมูลเวลาในเซสชันนี้</div>';
+    penaltyLastBtn.disabled = true;
+    dnfLastBtn.disabled = true;
     return;
   }
-  let sec = ms / 1000;
-  let txt = sec.toFixed(2) + " วินาที";
-  if(isPenalty) txt += ' บวกสอง';
-  speakText(txt);
-}
-
-function speakText(text){
-  if(!('speechSynthesis' in window)) return;
-  window.speechSynthesis.cancel(); // ตัดคำพูดเดิม
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = text.match(/[a-zA-Z]/) ? 'en-US' : 'th-TH';
-  utterance.rate = 1.1;
-  window.speechSynthesis.speak(utterance);
-}
-
-// ---------- Format time utilities ----------
-function formatTime(ms, isDnf=false, penalty=0){
-  if(isDnf) return 'DNF';
-  let sec = (ms / 1000).toFixed(2);
-  if(ms >= 60000){
-    let m = Math.floor(ms / 60000);
-    let s = ((ms % 60000) / 1000).toFixed(2);
-    if(s < 10) s = '0' + s;
-    sec = `${m}:${s}`;
-  }
-  if(penalty === 1) return sec + ' (+2)';
-  return sec;
-}
-
-// ---------- Chart implementation ----------
-let myChart = null;
-function updateChart(){
-  const ctx = document.getElementById('timeChart').getContext('2d');
-  const container = document.getElementById('chartContainer');
   
-  // กรองเฉพาะสถิติปกติเพื่อนำมาพล็อตลงกราฟ
-  const validTimes = times.filter(t => !t.isDnf).slice(-30); // แสดงสูงสุด 30 รายการล่าสุด
+  penaltyLastBtn.disabled = false;
+  dnfLastBtn.disabled = false;
   
-  if(validTimes.length < 2){
-    container.style.display = 'none';
-    return;
-  }
-  container.style.display = 'block';
-
-  const labels = validTimes.map((_, i) => i + 1);
-  const dataValues = validTimes.map(t => t.ms / 1000);
-  
-  // ดึงค่าสีกระแสปัจจุบันจากรากธีม
-  const rootStyle = getComputedStyle(document.documentElement);
-  const accentColor = rootStyle.getPropertyValue('--accent').trim() || '#00e5ff';
-  const panelSolid = rootStyle.getPropertyValue('--panel-solid').trim() || '#181233';
-  const textColor = rootStyle.getPropertyValue('--text').trim() || '#e9e8ff';
-
-  if(myChart){
-    myChart.data.labels = labels;
-    myChart.data.datasets[0].data = dataValues;
-    myChart.data.datasets[0].borderColor = accentColor;
-    myChart.data.datasets[0].backgroundColor = accentColor + '15';
-    myChart.options.scales.x.ticks.color = textColor;
-    myChart.options.scales.y.ticks.color = textColor;
-    myChart.update();
+  // อัปเดตสถานะปุ่มด่วนชิ้นล่าสุด
+  const lastTime = curSess.times[0];
+  if(lastTime.penalty === 2){
+    penaltyLastBtn.textContent = '⚠️ คืนค่าเดิม (จาก +2)';
+    penaltyLastBtn.style.background = 'var(--accent2)';
+    penaltyLastBtn.style.color = '#111';
   } else {
-    myChart = new Chart(ctx, {
+    penaltyLastBtn.textContent = '⚠️ +2 (เวลาล่าสุด)';
+    penaltyLastBtn.style.background = 'var(--panel)';
+    penaltyLastBtn.style.color = 'var(--text)';
+  }
+  
+  if(lastTime.dnf){
+    dnfLastBtn.textContent = '❌ คืนค่าเดิม (จาก DNF)';
+    dnfLastBtn.style.background = 'var(--danger)';
+    dnfLastBtn.style.color = '#111';
+  } else {
+    dnfLastBtn.textContent = '❌ DNF (เวลาล่าสุด)';
+    dnfLastBtn.style.background = 'var(--panel)';
+    dnfLastBtn.style.color = 'var(--text)';
+  }
+
+  // หาเวลาที่ดีที่สุดเพื่อไฮไลท์
+  let bestMs = Infinity;
+  curSess.times.forEach(t => {
+    if(!t.dnf && t.ms < bestMs) bestMs = t.ms;
+  });
+
+  historyList.innerHTML = '';
+  curSess.times.forEach((t, index) => {
+    const displayIdx = curSess.times.length - index;
+    const isBest = (!t.dnf && t.ms === bestMs);
+    
+    let timeText = formatTime(t.ms);
+    if(t.dnf) timeText = 'DNF';
+    else if(t.penalty === 2) timeText += ' (+2)';
+
+    const row = document.createElement('div');
+    row.className = 'time-row' + (isBest ? ' best-time' : '');
+    
+    row.innerHTML = `
+      <div class="row-main">
+        <div>
+          <span class="idx">#${displayIdx}</span>
+          ${isBest ? '<span class="best-star">⭐</span>' : ''}
+          <span class="val">${timeText}</span>
+        </div>
+        <div class="row-actions">
+          <span class="pen-btn ${t.penalty===2?'active':''}" onclick="event.stopPropagation(); togglePenalty(${index})">+2</span>
+          <span class="dnf-btn ${t.dnf?'active':''}" onclick="event.stopPropagation(); toggleDnf(${index})">DNF</span>
+          <span class="del" onclick="event.stopPropagation(); deleteTime(${index})">🗑️</span>
+        </div>
+      </div>
+      <div class="row-scramble">🧩 Scramble: ${t.scramble || '-'} (${t.date || ''})</div>
+    `;
+    
+    row.addEventListener('click', () => {
+      row.classList.toggle('expanded');
+    });
+    
+    historyList.appendChild(row);
+  });
+}
+
+function deleteTime(index){
+  const curSess = sessionsData.sessions[sessionsData.currentId];
+  if(!curSess) return;
+  if(confirm("ลบเวลาแถวนี้ใช่หรือไม่?")){
+    curSess.times.splice(index, 1);
+    saveSessionsToStorage();
+    renderHistory();
+    renderStats();
+  }
+}
+
+function togglePenalty(index){
+  const curSess = sessionsData.sessions[sessionsData.currentId];
+  if(!curSess || !curSess.times[index]) return;
+  const item = curSess.times[index];
+  
+  if(item.dnf) return; // DNF อยู่ห้ามกด +2
+  
+  if(item.penalty === 2){
+    item.penalty = 0;
+    item.ms -= 2000;
+  } else {
+    item.penalty = 2;
+    item.ms += 2000;
+  }
+  saveSessionsToStorage();
+  renderHistory();
+  renderStats();
+}
+
+function toggleDnf(index){
+  const curSess = sessionsData.sessions[sessionsData.currentId];
+  if(!curSess || !curSess.times[index]) return;
+  const item = curSess.times[index];
+  
+  if(item.dnf){
+    item.dnf = false;
+  } else {
+    // ถ้าเคยได้ +2 ให้คืนค่าเวลาก่อนทำ DNF เพื่อความแม่นยำของข้อมูลดิบ
+    if(item.penalty === 2){
+      item.penalty = 0;
+      item.ms -= 2000;
+    }
+    item.dnf = true;
+  }
+  saveSessionsToStorage();
+  renderHistory();
+  renderStats();
+}
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+  const curSess = sessionsData.sessions[sessionsData.currentId];
+  if(!curSess || curSess.times.length === 0) return;
+  if(confirm("ล้างสถิติเวลาทั้งหมดในเซสชันนี้? ไม่สามารถย้อนกลับได้!")){
+    curSess.times = [];
+    saveSessionsToStorage();
+    renderHistory();
+    renderStats();
+  }
+});
+
+
+// ---------- Statistics Calculations & Chart Integration ----------
+let timeChart = null;
+
+function calcAoN(arr, n) {
+  if (arr.length < n) return '-';
+  const lastN = arr.slice(0, n);
+  
+  let dnfCount = 0;
+  let subArr = [];
+  
+  lastN.forEach(t => {
+    if (t.dnf) dnfCount++;
+    else subArr.push(t.ms);
+  });
+  
+  if (dnfCount > 1) return 'DNF'; 
+  
+  // เรียงลำดับค่าน้อยไปมาก
+  subArr.sort((a, b) => a - b);
+  
+  if (dnfCount === 1) {
+    // ตัดค่าน้อยที่สุดออก 1 ตัว ค่ามากที่สุดคือตัวที่เป็น DNF ซึ่งแยกไปแล้ว
+    subArr.shift(); 
+  } else {
+    // ตัดทั้งค่าน้อยสุดและมากสุดออกอย่างละหนึ่งตัว
+    subArr.shift();
+    subArr.pop();
+  }
+  
+  const sum = subArr.reduce((acc, v) => acc + v, 0);
+  return formatTime(sum / subArr.length);
+}
+
+function renderStats(){
+  const curSess = sessionsData.sessions[sessionsData.currentId];
+  const bestBox = document.getElementById('statBest');
+  const ao5Box = document.getElementById('statAo5');
+  const ao12Box = document.getElementById('statAo12');
+  const meanBox = document.getElementById('statMean');
+  
+  if(!curSess || curSess.times.length === 0){
+    bestBox.textContent = '-';
+    ao5Box.textContent = '-';
+    ao12Box.textContent = '-';
+    meanBox.textContent = '-';
+    document.getElementById('chartContainer').style.display = 'none';
+    return;
+  }
+  
+  const times = curSess.times; // ล่าสุดอยู่อันแรก
+  
+  // คำนวณหาค่า Best
+  let best = Infinity;
+  times.forEach(t => { if(!t.dnf && t.ms < best) best = t.ms; });
+  bestBox.textContent = best === Infinity ? 'DNF' : formatTime(best);
+  
+  // คำนวณหาค่า Ao5 และ Ao12
+  ao5Box.textContent = calcAoN(times, 5);
+  ao12Box.textContent = calcAoN(times, 12);
+  
+  // คำนวณหาค่าเฉลี่ยสุทธิ (Mean)
+  let validCount = 0;
+  let totalSum = 0;
+  times.forEach(t => {
+    if(!t.dnf){
+      validCount++;
+      totalSum += t.ms;
+    }
+  });
+  meanBox.textContent = validCount > 0 ? formatTime(totalSum / validCount) : 'DNF';
+  
+  // วาดกราฟสถิติเมื่อมีข้อมูลตั้งแต่ 2 ครั้งขึ้นไป
+  if(times.length >= 2){
+    document.getElementById('chartContainer').style.display = 'block';
+    updateChart();
+  } else {
+    document.getElementById('chartContainer').style.display = 'none';
+  }
+}
+
+function updateChart(){
+  const curSess = sessionsData.sessions[sessionsData.currentId];
+  if(!curSess) return;
+  
+  // ดึงข้อมูลเรียงย้อนจากอดีตมาปัจจุบัน (ย้อนศรอาเรย์เดิม)
+  const chartData = curSess.times.slice().reverse();
+  const labels = chartData.map((_, i) => i + 1);
+  const dataVals = chartData.map(t => t.dnf ? null : (t.ms / 1000));
+  
+  // ตรวจจับโทนสีคู่สีตามสถานะธีมปัจจุบัน
+  const isLight = document.body.classList.contains('theme-light');
+  const textColor = isLight ? '#1c1c1e' : '#e9e8ff';
+  const gridColor = isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)';
+  
+  const ctx = document.getElementById('timeChart').getContext('2d');
+  
+  if(timeChart){
+    timeChart.data.labels = labels;
+    timeChart.data.datasets[0].data = dataVals;
+    timeChart.options.scales.x.ticks.color = textColor;
+    timeChart.options.scales.y.ticks.color = textColor;
+    timeChart.options.scales.x.grid.color = gridColor;
+    timeChart.options.scales.y.grid.color = gridColor;
+    timeChart.update();
+  } else {
+    timeChart = new Chart(ctx, {
       type: 'line',
       data: {
         labels: labels,
         datasets: [{
-          label: 'เวลาแต่ละรอบ (วินาที)',
-          data: dataValues,
-          borderColor: accentColor,
-          backgroundColor: accentColor + '15',
-          borderWidth: 2,
+          label: 'เวลา (วินาที)',
+          data: dataVals,
+          borderColor: '#00e5ff',
+          backgroundColor: 'rgba(0, 229, 255, 0.15)',
+          borderWidth: 2.5,
+          pointRadius: 3.5,
+          pointBackgroundColor: '#ffc857',
           tension: 0.15,
-          fill: true
+          spanGaps: true // ถ้าเจอ DNF (null) ให้ข้ามจุดไปวาดเส้นต่อ
         }]
       },
       options: {
         responsive: true,
-        maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
-          x: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 } } },
-          y: { grid: { color: 'rgba(167,139,250,0.1)' }, ticks: { color: textColor, font: { size: 10 } } }
+          x: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 } } },
+          y: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 } } }
         }
       }
     });
   }
 }
 
-// ---------- Core calculation methods ----------
-let spacePressed = false;
-let holdTimeout = null;
 
-function handleKeyDown(e){
-  if(e.code !== 'Space' || btConnected) return;
-  e.preventDefault();
-  if(spacePressed) return;
-  
-  if(state === 'running'){
-    stopTimer();
+// ---------- Import / Export Data Operations ----------
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const curSess = sessionsData.sessions[sessionsData.currentId];
+  if(!curSess || curSess.times.length === 0){
+    alert("ไม่มีข้อมูลสำหรับส่งออก");
     return;
   }
-  if(state === 'inspecting'){
-    stopInspection();
-    display.className = 'ready';
-    display.textContent = '0.00';
-    spacePressed = true;
-    return;
-  }
-  
-  spacePressed = true;
-  display.className = 'inspecting'; 
-  
-  holdTimeout = setTimeout(() => {
-    display.className = 'ready';
-    display.textContent = '0.00';
-  }, 400); 
-}
-
-function handleKeyUp(e){
-  if(e.code !== 'Space' || btConnected) return;
-  e.preventDefault();
-  clearTimeout(holdTimeout);
-  
-  if(!spacePressed) return;
-  spacePressed = false;
-  
-  if(display.className === 'ready'){
-    startTimer();
-  } else {
-    if(inspectionEnabled && state !== 'inspecting'){
-      startInspection();
-    } else {
-      display.className = '';
-      display.textContent = '0.00';
-    }
-  }
-}
-
-// แตะสัมผัสหน้าจอมือถือ
-function handleTouchStart(e){
-  if(btConnected) return;
-  if(e.target.closest('#configBar, #history, #btSection, #sessionBar, #cubeTypeBar, #quickPenaltyBar')) return;
-  e.preventDefault();
-  
-  if(state === 'running'){
-    stopTimer();
-    return;
-  }
-  if(state === 'inspecting'){
-    stopInspection();
-    display.className = 'ready';
-    display.textContent = '0.00';
-    spacePressed = true; 
-    return;
-  }
-  
-  spacePressed = true;
-  display.className = 'inspecting';
-  holdTimeout = setTimeout(() => {
-    display.className = 'ready';
-    display.textContent = '0.00';
-  }, 400);
-}
-
-function handleTouchEnd(e){
-  if(btConnected) return;
-  if(!spacePressed) return;
-  e.preventDefault();
-  clearTimeout(holdTimeout);
-  spacePressed = false;
-  
-  if(display.className === 'ready'){
-    startTimer();
-  } else {
-    if(inspectionEnabled && state !== 'inspecting'){
-      startInspection();
-    } else {
-      display.className = '';
-      display.textContent = '0.00';
-    }
-  }
-}
-
-window.addEventListener('keydown', handleKeyDown);
-window.addEventListener('keyup', handleKeyUp);
-display.addEventListener('touchstart', handleTouchStart);
-display.addEventListener('touchend', handleTouchEnd);
-
-function startTimer(){
-  clearInspectVisualClasses();
-  display.classList.add('go');
-  state = 'running';
-  startTime = Date.now();
-  tick();
-}
-
-function tick(){
-  if(state !== 'running') return;
-  elapsed = Date.now() - startTime;
-  display.textContent = formatTime(elapsed);
-  rafId = requestAnimationFrame(tick);
-}
-
-function stopTimer(){
-  cancelAnimationFrame(rafId);
-  display.classList.remove('go');
-  state = 'idle';
-  
-  const penalty = pendingPenalty;
-  pendingPenalty = 0; // รีเซ็ตสากลหลังจากบันทึก
-  
-  const finalTime = elapsed + (penalty === 1 ? 2000 : 0);
-  const finalDnf = (penalty === 2);
-  
-  saveTime(finalTime, finalDnf, penalty);
-  newScramble();
-}
-
-function saveTime(ms, isDnf=false, penalty=0){
-  times.push({
-    ms: ms,
-    isDnf: isDnf,
-    penalty: penalty, 
-    scramble: currentScramble,
-    date: new Date().toLocaleString('th-TH'),
-    cubeType: getCurrentCubeType()
+  let csv = "ลำดับ,เวลาจับได้,สถานะพิเศษ,สแครมเบิล (Scramble),วันเวลาที่บันทึก\n";
+  curSess.times.forEach((t, i) => {
+    const idx = curSess.times.length - i;
+    let note = "ปกติ";
+    if(t.dnf) note = "DNF";
+    else if(t.penalty === 2) note = "+2 Penalty";
+    
+    let rawSec = t.dnf ? "DNF" : (t.ms/1000).toFixed(2);
+    csv += `${idx},${rawSec},${note},"${t.scramble || ''}",${t.date || ''}\n`;
   });
   
-  saveSessionsToStorage();
-  renderHistory();
-  renderStats();
-  
-  // สั่งอ่านเวลาออกเสียงผ่านเว็บเบราว์เซอร์
-  speakTimeText(ms, isDnf, penalty === 1);
-}
-
-function deleteTime(idx){
-  if(confirm('คุณต้องการลบสถิติรอบนี้ใช่หรือไม่?')){
-    times.splice(idx, 1);
-    saveSessionsToStorage();
-    renderHistory();
-    renderStats();
-  }
-}
-
-function togglePenalty(idx){
-  if(times.length === 0) return;
-  const t = times[idx === 0 ? times.length - 1 : idx];
-  if(t.penalty === 1){
-    t.penalty = 0;
-    t.ms -= 2000;
-  } else {
-    if(t.isDnf){
-      t.isDnf = false;
-    }
-    t.penalty = 1;
-    t.ms += 2000;
-  }
-  saveSessionsToStorage();
-  renderHistory();
-  renderStats();
-}
-
-function toggleDnf(idx){
-  if(times.length === 0) return;
-  const t = times[idx === 0 ? times.length - 1 : idx];
-  if(t.isDnf){
-    t.isDnf = false;
-    t.penalty = 0;
-  } else {
-    t.isDnf = true;
-    t.penalty = 2;
-  }
-  saveSessionsToStorage();
-  renderHistory();
-  renderStats();
-}
-
-// ---------- UI Render Statistics Functions ----------
-function calcMean(arr){
-  const valid = arr.filter(t => !t.isDnf);
-  if(valid.length === 0) return '-';
-  let sum = valid.reduce((acc, t) => acc + t.ms, 0);
-  return formatTime(sum / valid.length);
-}
-
-function calcAvg(arr){
-  // WCA Average rules: ตัดหัวท้าย 1 อันที่เร็วสุดและช้าสุด
-  if(arr.length < 3) return '-';
-  
-  let sorted = [...arr].sort((a,b) => {
-    if(a.isDnf) return 1;
-    if(b.isDnf) return -1;
-    return a.ms - b.ms;
-  });
-  
-  // เช็คเงื่อนไข DNF
-  const dnfCount = sorted.filter(t => t.isDnf).length;
-  if(dnfCount > 1) return 'DNF';
-  
-  // ตัดหัวท้ายออก
-  sorted.pop();
-  sorted.shift();
-  
-  let sum = sorted.reduce((acc, t) => acc + t.ms, 0);
-  return formatTime(sum / sorted.length);
-}
-
-function renderStats(){
-  const cubeType = getCurrentCubeType();
-  const currentTimes = times; 
-  
-  const pBtn = document.getElementById('penaltyLastBtn');
-  const dBtn = document.getElementById('dnfLastBtn');
-  if(currentTimes.length === 0){
-    pBtn.disabled = true;
-    dBtn.disabled = true;
-  } else {
-    pBtn.disabled = false;
-    dBtn.disabled = false;
-    
-    const lastT = currentTimes[currentTimes.length - 1];
-    pBtn.className = lastT.penalty === 1 ? 'active' : '';
-    dBtn.className = lastT.isDnf ? 'active' : '';
-  }
-
-  // ค้นหาเวลาปกติที่ดีที่สุด
-  const validTimes = currentTimes.filter(t => !t.isDnf);
-  let best = '-';
-  if(validTimes.length > 0){
-    let minMs = Math.min(...validTimes.map(t => t.ms));
-    best = formatTime(minMs);
-  }
-  document.getElementById('statBest').textContent = best;
-  
-  // คำนวณ Ao5, Ao12
-  let ao5 = '-';
-  if(currentTimes.length >= 5){
-    ao5 = calcAvg(currentTimes.slice(-5));
-  }
-  document.getElementById('statAo5').textContent = ao5;
-  
-  let ao12 = '-';
-  if(currentTimes.length >= 12){
-    ao12 = calcAvg(currentTimes.slice(-12));
-  }
-  document.getElementById('statAo12').textContent = ao12;
-  document.getElementById('statMean').textContent = calcMean(currentTimes);
-  
-  updateChart();
-}
-
-function renderHistory(){
-  const list = document.getElementById('historyList');
-  list.innerHTML = '';
-  
-  if(times.length === 0){
-    list.innerHTML = '<div class="empty">ยังไม่มีข้อมูลสถิติในเซสชันนี้</div>';
-    return;
-  }
-  
-  // หาไอดีแมตช์ที่ทำเวลาได้ดีที่สุดเพื่อติดดาวทองความสวยงาม
-  const validTimes = times.filter(t => !t.isDnf);
-  let minMs = validTimes.length > 0 ? Math.min(...validTimes.map(t => t.ms)) : -1;
-
-  // วาดจากอันล่าสุดขึ้นมาข้างบนสุด
-  for(let i=times.length-1; i>=0; i--){
-    const t = times[i];
-    const isBest = (!t.isDnf && t.ms === minMs);
-    
-    const row = document.createElement('div');
-    row.className = 'time-row' + (isBest ? ' best-time' : '');
-    
-    // คลิกแถวประวัติเพื่อเปิด/ปิดดูรายละเอียดชุด Scramble
-    row.addEventListener('click', (e) => {
-      if(e.target.closest('.row-actions, button, span')) return;
-      row.classList.toggle('expanded');
-    });
-    
-    row.innerHTML = `
-      <div class="row-main">
-        <span>
-          <span class="idx">#${i+1}</span>
-          ${isBest ? '<span class="best-star">⭐</span>' : ''}
-          <b>${formatTime(t.ms, t.isDnf, t.penalty)}</b>
-        </span>
-        <span class="row-actions">
-          <span class="pen-btn ${t.penalty === 1 ? 'active' : ''}" onclick="togglePenalty(${i})" title="บวกเวลาพิเศษ +2 วินาที">+2</span>
-          <span class="dnf-btn ${t.isDnf ? 'active' : ''}" onclick="toggleDnf(${i})" title="ตั้งค่ารอบนี้เป็น DNF">DNF</span>
-          <span class="del" onclick="deleteTime(${i})" title="ลบข้อมูลรอบนี้">🗑️</span>
-        </span>
-      </div>
-      <div class="row-scramble">
-        <div><b>สูตรสลับ:</b> ${t.scramble || '-'}</div>
-        <div style="font-size:10px; opacity:0.7; margin-top:2px;">⏱️ ${t.date || ''}</div>
-      </div>
-    `;
-    list.appendChild(row);
-  }
-}
-
-document.getElementById('clearBtn').addEventListener('click', () => {
-  if(confirm('คุณแน่ใจหรือไม่ว่าต้องการล้างข้อมูลเวลาทั้งหมดในเซสชันนี้? ทำแล้วย้อนคืนไม่ได้นะ!')){
-    times = [];
-    saveSessionsToStorage();
-    renderHistory();
-    renderStats();
-  }
-});
-
-// ---------- JSON Backup Import/Export Functions ----------
-document.getElementById('exportJsonBtn').addEventListener('click', () => {
-  if(times.length === 0){
-    alert('ไม่มีข้อมูลให้ออกไฟล์สำรองข้อมูลในขณะนี้');
-    return;
-  }
-  const backupData = {
-    version: "cube-timer-v3",
-    sessionName: sessionsData.sessions[sessionsData.currentId].name,
-    cubeType: getCurrentCubeType(),
-    exportedAt: new Date().toISOString(),
-    data: times
-  };
-  
-  const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+  const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `cube_backup_${getCurrentCubeType()}_${Date.now()}.json`;
+  a.download = `${curSess.name.replace(/\s+/g, '_')}_times.csv`;
   a.click();
-  URL.revokeObjectURL(url);
+});
+
+document.getElementById('exportJsonBtn').addEventListener('click', () => {
+  const jsonStr = JSON.stringify(sessionsData, null, 2);
+  const blob = new Blob([jsonStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `rubik_timer_backup_${Date.now()}.json`;
+  a.click();
 });
 
 document.getElementById('importBtn').addEventListener('click', () => {
-  const fileInput = document.createElement('input');
-  fileInput.type = 'file';
-  fileInput.accept = '.json';
-  
-  fileInput.addEventListener('change', (e) => {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = (e) => {
     const file = e.target.files[0];
     if(!file) return;
-    
     const reader = new FileReader();
-    reader.onload = function(evt) {
+    reader.onload = (evt) => {
       try{
-        const imported = JSON.parse(evt.target.result);
-        if(!imported.data || !Array.isArray(imported.data)){
-          throw new Error('โครงสร้างฟอร์แมต JSON สำหรับนำเข้าไม่ถูกต้อง');
-        }
-        if(confirm(`ตรวจพบข้อมูลชุดสถิติจำนวน ${imported.data.length} รอบจากเซสชัน "${imported.sessionName || 'ภายนอก'}" คุณต้องการนำเข้าข้อมูลนี้มารวมต่อท้ายเข้าในเซสชันปัจจุบันใช่หรือไม่?`)){
-          times = times.concat(imported.data);
-          saveSessionsToStorage();
-          renderHistory();
-          renderStats();
-          alert('นำเข้าไฟล์และผสานรวมข้อมูลเสร็จสมบูรณ์เรียบร้อยแล้ว!');
+        const parsed = JSON.parse(evt.target.result);
+        if(parsed.sessions && parsed.currentId){
+          if(confirm("พบข้อมูลระบบเซสชันสำรอง ต้องการนำเข้าข้อมูลมาทับของเดิมบนเครื่องนี้ทันทีหรือไม่?")){
+            sessionsData = parsed;
+            saveSessionsToStorage();
+            populateSessionSelect();
+            syncCubeTypeSelect();
+            newScramble();
+            renderHistory();
+            renderStats();
+            alert("นำเข้าข้อมูลสำเร็จแล้ว!");
+          }
+        } else {
+          alert("โครงสร้างไฟล์ JSON ตัวช่วยสำรองไม่ถูกต้อง");
         }
       }catch(err){
-        alert('เกิดข้อผิดพลาดในการโหลดไฟล์ JSON: ' + err.message);
+        alert("ไม่สามารถอ่านไฟล์ได้: " + err.message);
       }
     };
     reader.readAsText(file);
-  });
-  fileInput.click();
+  };
+  input.click();
 });
 
-// ---------- CSV Spreadsheet Export ----------
-document.getElementById('exportBtn').addEventListener('click', () => {
-  if(times.length === 0){
-    alert('ไม่มีข้อมูลประวัติสำหรับทำการส่งออกตาราง');
-    return;
-  }
-  let csv = '\uFEFF'; 
-  csv += 'ครั้งที่,ประเภทคิวบ์,เวลาจับ (มิลลิวินาที),ข้อความเวลา,สถานะเพนัลตี้,สูตรสลับลูก (Scramble),วันเวลาที่เล่น\n';
-  
-  times.forEach((t, i) => {
-    let pText = 'ปกติ';
-    if(t.penalty === 1) pText = '+2';
-    if(t.isDnf) pText = 'DNF';
-    
-    const cleanScramble = (t.scramble || '').replace(/"/g, '""');
-    csv += `${i+1},"${t.cubeType || '3x3'}",${t.ms},"${formatTime(t.ms, t.isDnf, t.penalty)}","${pText}","${cleanScramble}","${t.date}"\n`;
-  });
-  
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.setAttribute('href', url);
-  link.setAttribute('download', `cube_times_${getCurrentCubeType()}_${Date.now()}.csv`);
-  link.style.visibility = 'hidden';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-});
 
-// ---------- Theme customization engine ----------
+// ---------- Theme Configuration & Settings ----------
+const themeSelect = document.getElementById('themeSelect');
+
 function setTheme(themeName){
-  document.body.className = ''; 
+  document.body.classList.remove('theme-space', 'theme-amoled', 'theme-light', 'theme-cyberpunk');
   if(themeName !== 'space'){
     document.body.classList.add('theme-' + themeName);
   }
   localStorage.setItem('rubikTimerTheme', themeName);
   
-  if(times.length >= 2){
+  // รีเฟรชกราฟด้วยเมื่อสีธีมเปลี่ยนไป
+  const curSess = sessionsData.sessions[sessionsData.currentId];
+  if(curSess && curSess.times.length >= 2){
     updateChart();
   }
 }
@@ -1869,7 +1838,6 @@ themeSelect.addEventListener('change', (e) => {
   setTheme(e.target.value);
 });
 
-// โหลดข้อมูลความต้องการของยูสเซอร์เมื่อเริ่มต้นระบบ
 function loadUserPreferences(){
   const savedTheme = localStorage.getItem('rubikTimerTheme') || 'space';
   themeSelect.value = savedTheme;
@@ -1879,15 +1847,16 @@ function loadUserPreferences(){
   if(savedVoice !== null){
     voiceToggle.checked = savedVoice === 'true';
   } else {
-    voiceToggle.checked = true;
+    voiceToggle.checked = true; // เปิดค่าเริ่มต้นเป็นเปิดใช้งานระบบอ่านออกเสียง
   }
 }
 
-voiceToggle.addEventListener('change', (e) => {
+document.getElementById('voiceToggle').addEventListener('change', (e) => {
   localStorage.setItem('rubikTimerVoice', e.target.checked);
 });
 
-// ---------- Init ----------
+
+// ---------- Init Run Block ----------
 loadSessions();
 populateSessionSelect();
 syncCubeTypeSelect();
@@ -1896,7 +1865,8 @@ renderHistory();
 renderStats();
 newScramble();
 
-// ---------- PWA ----------
+
+// ---------- PWA Implementation Setup ----------
 if('serviceWorker' in navigator){
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js').then(reg => {
@@ -1905,11 +1875,13 @@ if('serviceWorker' in navigator){
         if(!newWorker) return;
         newWorker.addEventListener('statechange', () => {
           if(newWorker.state === 'activated'){
-            console.log('Cube Timer: แคชออฟไลน์อัปเดตแล้ว');
+            console.log('Cube Timer: ระบบแคชไฟล์ออฟไลน์อัปเดตเวอร์ชันใหม่แล้ว');
           }
         });
       });
-    }).catch(err => console.log('ServiceWorker ล้มเหลว: ', err));
+    }).catch(err => {
+      console.log('ServiceWorker registration failed: ', err);
+    });
   });
 }
 </script>
