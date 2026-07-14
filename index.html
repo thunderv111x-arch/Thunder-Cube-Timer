@@ -5,13 +5,14 @@
 <title>Rubik's Cube Timer</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="theme-color" content="#05050f">
-<meta name="description" content="ตัวจับเวลาลูกบาศก์รูบิค พร้อม scramble, สถิติ, session และรองรับ GAN & QiYi Smart Timer">
+<meta name="description" content="ตัวจับเวลาลูกบาศก์รูบิค พร้อม scramble, สถิติ, session และรองรับ GAN Smart Timer">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Cube Timer">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
   :root{
     --bg:#05050f;
@@ -42,7 +43,47 @@
     user-select:none;
     position:relative;
     overflow-x:hidden;
+    transition: background 0.3s, color 0.3s;
   }
+  
+  /* --- Themes CSS --- */
+  body.theme-amoled {
+    --bg:#000000;
+    --panel:rgba(20,20,20,0.8);
+    --panel-solid:#151515;
+    --accent:#ffffff;
+    --accent2:#00e5ff;
+    --danger:#ff3b30;
+    --purple:#8e8e93;
+    --text:#ffffff;
+    --muted:#8e8e93;
+    background: #000000;
+  }
+  body.theme-light {
+    --bg:#f4f5f6;
+    --panel:rgba(255,255,255,0.85);
+    --panel-solid:#ffffff;
+    --accent:#007aff;
+    --accent2:#e0a900;
+    --danger:#ff3b30;
+    --purple:#5856d6;
+    --text:#1c1c1e;
+    --muted:#8e8e93;
+    background: #f4f5f6;
+  }
+  body.theme-cyberpunk {
+    --bg:#000511;
+    --panel:rgba(0,10,24,0.7);
+    --panel-solid:#001533;
+    --accent:#00ffcc;
+    --accent2:#fffb00;
+    --danger:#ff0077;
+    --purple:#cc00ff;
+    --text:#00ffcc;
+    --muted:#00aaff;
+    background: radial-gradient(circle at center, #001026 0%, #000511 100%), #000511;
+  }
+
   body::before, body::after{
     content:"";
     position:fixed;
@@ -74,6 +115,12 @@
     opacity:.35;
     animation:twinkle 6s ease-in-out infinite alternate-reverse;
   }
+  /* ปิดเอฟเฟกต์ดาววิบวับในธีมอื่นเพื่อความสบายตา */
+  body.theme-amoled::before, body.theme-amoled::after,
+  body.theme-light::before, body.theme-light::after {
+    display: none;
+  }
+  
   @keyframes twinkle{
     0%{opacity:.2;}
     100%{opacity:.7;}
@@ -82,10 +129,48 @@
     position:relative;
     z-index:1;
   }
-  h1{font-size:22px;color:var(--text);letter-spacing:1px;margin-bottom:4px;text-shadow:0 0 12px rgba(0,229,255,0.6), 0 0 24px rgba(167,139,250,0.4);}
-  #scramble{font-size:22px;font-weight:600;letter-spacing:2px;background:var(--panel);backdrop-filter:blur(6px);border:1px solid rgba(0,229,255,0.25);box-shadow:0 0 20px rgba(0,229,255,0.08), inset 0 0 20px rgba(167,139,250,0.06);padding:14px 24px;border-radius:12px;margin:12px 0 30px;text-align:center;max-width:700px;}
-  #timerDisplay{font-size:96px;font-weight:700;font-variant-numeric:tabular-nums;transition:color .15s, text-shadow .15s;margin:10px 0 30px;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation;padding:20px 40px;border-radius:20px;cursor:pointer;text-shadow:0 0 18px rgba(233,232,255,0.25);}
-  @media (max-width:480px){#timerDisplay{font-size:64px;padding:16px 24px;}}
+  h1{
+    font-size:22px;
+    color:var(--text);
+    letter-spacing:1px;
+    margin-bottom:4px;
+    text-shadow:0 0 12px rgba(0,229,255,0.6), 0 0 24px rgba(167,139,250,0.4);
+    text-align: center;
+  }
+  #scramble{
+    font-size:22px;
+    font-weight:600;
+    letter-spacing:2px;
+    background:var(--panel);
+    backdrop-filter:blur(6px);
+    border:1px solid rgba(0,229,255,0.25);
+    box-shadow:0 0 20px rgba(0,229,255,0.08), inset 0 0 20px rgba(167,139,250,0.06);
+    padding:14px 24px;
+    border-radius:12px;
+    margin:12px 0 30px;
+    text-align:center;
+    max-width:700px;
+  }
+  #timerDisplay{
+    font-size:96px;
+    font-weight:700;
+    font-variant-numeric:tabular-nums;
+    transition:color .15s, text-shadow .15s;
+    margin:10px 0 30px;
+    -webkit-user-select:none;
+    -webkit-touch-callout:none;
+    touch-action:manipulation;
+    padding:20px 40px;
+    border-radius:20px;
+    cursor:pointer;
+    text-shadow:0 0 18px rgba(233,232,255,0.25);
+  }
+  @media (max-width:480px){
+    #timerDisplay{
+      font-size:64px;
+      padding:16px 24px;
+    }
+  }
   .ready{color:var(--accent2) !important; text-shadow:0 0 24px rgba(255,200,87,0.7) !important;}
   .go{color:var(--accent) !important; text-shadow:0 0 24px rgba(0,229,255,0.7) !important;}
   .inspecting{color:var(--purple) !important; text-shadow:0 0 24px rgba(167,139,250,0.7) !important;}
@@ -93,61 +178,286 @@
   .inspect-danger{color:var(--danger) !important; text-shadow:0 0 24px rgba(255,95,143,0.7) !important;}
   .penalty{color:var(--accent2) !important;}
   .dnf{color:var(--danger) !important;}
-  #inspectionToggleWrap{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-bottom:24px;cursor:pointer;}
-  #inspectionToggleWrap input{width:16px;height:16px;cursor:pointer;}
-  #hint{color:var(--muted);font-size:14px;margin-bottom:30px;}
-  .stats{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-bottom:24px;}
-  .stat-box{background:var(--panel);backdrop-filter:blur(6px);border:1px solid rgba(167,139,250,0.25);box-shadow:0 0 16px rgba(167,139,250,0.08);border-radius:10px;padding:12px 18px;text-align:center;min-width:90px;}
-  .stat-box .label{font-size:12px;color:var(--muted);margin-bottom:4px;}
-  .stat-box .value{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;}
-  #history{width:100%;max-width:500px;background:var(--panel);backdrop-filter:blur(6px);border:1px solid rgba(0,229,255,0.2);box-shadow:0 0 20px rgba(0,229,255,0.06);border-radius:12px;padding:14px 18px;max-height:260px;overflow-y:auto;}
-  #history h3{margin:0 0 10px;font-size:14px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;}
-  #clearBtn{background:transparent;border:1px solid var(--danger);color:var(--danger);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px;}
+  
+  #configBar{
+    display:flex;
+    align-items:center;
+    gap:15px;
+    font-size:13px;
+    color:var(--muted);
+    margin-bottom:24px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  #configBar label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+  #configBar input, #configBar select{
+    cursor:pointer;
+  }
+  #configBar select {
+    background: var(--panel-solid);
+    color: var(--text);
+    border: 1px solid rgba(167,139,250,0.35);
+    padding: 4px 8px;
+    border-radius: 6px;
+  }
+  
+  #hint{
+    color:var(--muted);
+    font-size:14px;
+    margin-bottom:30px;
+    text-align: center;
+  }
+  .stats{
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+    justify-content:center;
+    margin-bottom:24px;
+  }
+  .stat-box{
+    background:var(--panel);
+    backdrop-filter:blur(6px);
+    border:1px solid rgba(167,139,250,0.25);
+    box-shadow:0 0 16px rgba(167,139,250,0.08);
+    border-radius:10px;
+    padding:12px 18px;
+    text-align:center;
+    min-width:90px;
+  }
+  .stat-box .label{
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:4px;
+  }
+  .stat-box .value{
+    font-size:20px;
+    font-weight:600;
+    font-variant-numeric:tabular-nums;
+  }
+  
+  /* --- สไตล์ของกราฟ --- */
+  #chartContainer {
+    width: 100%;
+    max-width: 500px;
+    background: var(--panel);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(0,229,255,0.2);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 24px;
+    display: none; /* เปิดเมื่อมีข้อมูล */
+  }
+  
+  #history{
+    width:100%;
+    max-width:500px;
+    background:var(--panel);
+    backdrop-filter:blur(6px);
+    border:1px solid rgba(0,229,255,0.2);
+    box-shadow:0 0 20px rgba(0,229,255,0.06);
+    border-radius:12px;
+    padding:14px 18px;
+    max-height:260px;
+    overflow-y:auto;
+  }
+  #history h3{
+    margin:0 0 10px;
+    font-size:14px;
+    color:var(--muted);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  #clearBtn{
+    background:transparent;
+    border:1px solid var(--danger);
+    color:var(--danger);
+    padding:4px 10px;
+    border-radius:6px;
+    cursor:pointer;
+    font-size:12px;
+  }
   #clearBtn:hover{background:var(--danger); color:#111;}
   .time-row .idx{color:var(--muted); margin-right:10px;}
   .row-actions{display:flex; gap:10px; align-items:center;}
-  .del{color:var(--muted);cursor:pointer;font-size:12px;}
+  .del{
+    color:var(--muted);
+    cursor:pointer;
+    font-size:12px;
+  }
   .del:hover{color:var(--danger);}
-  .pen-btn{color:var(--muted);cursor:pointer;font-size:12px;}
+  .pen-btn{
+    color:var(--muted);
+    cursor:pointer;
+    font-size:12px;
+  }
   .pen-btn:hover{color:var(--accent2);}
   .pen-btn.active{color:var(--accent2); font-weight:700;}
-  .dnf-btn{color:var(--muted);cursor:pointer;font-size:12px;}
+  .dnf-btn{
+    color:var(--muted);
+    cursor:pointer;
+    font-size:12px;
+  }
   .dnf-btn:hover{color:var(--danger);}
   .dnf-btn.active{color:var(--danger); font-weight:700;}
-  #quickPenaltyBar{display:flex;gap:10px;margin:0 0 24px;}
-  #quickPenaltyBar button{background:var(--panel);backdrop-filter:blur(6px);color:var(--text);border:1px solid rgba(255,200,87,0.35);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;}
+  #quickPenaltyBar{
+    display:flex;
+    gap:10px;
+    margin:0 0 24px;
+  }
+  #quickPenaltyBar button{
+    background:var(--panel);
+    backdrop-filter:blur(6px);
+    color:var(--text);
+    border:1px solid rgba(255,200,87,0.35);
+    padding:8px 16px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:13px;
+  }
   #quickPenaltyBar button#dnfLastBtn{border-color:rgba(255,95,143,0.4);}
   #quickPenaltyBar button:hover{box-shadow:0 0 12px rgba(255,200,87,0.4);}
   #quickPenaltyBar button#dnfLastBtn:hover{box-shadow:0 0 12px rgba(255,95,143,0.4);}
   #quickPenaltyBar button:disabled{opacity:.35; cursor:not-allowed; box-shadow:none;}
-  .empty{color:var(--muted);font-size:13px;text-align:center;padding:10px 0;}
-  #btSection{margin-bottom:26px;text-align:center;}
-  #btConnectBtn{background:var(--panel);backdrop-filter:blur(6px);color:var(--text);border:1px solid rgba(167,139,250,0.35);padding:10px 18px;border-radius:8px;cursor:pointer;font-size:14px;}
+  .empty{
+    color:var(--muted);
+    font-size:13px;
+    text-align:center;
+    padding:10px 0;
+  }
+  #btSection{
+    margin-bottom:26px;
+    text-align:center;
+  }
+  #btConnectBtn{
+    background:var(--panel);
+    backdrop-filter:blur(6px);
+    color:var(--text);
+    border:1px solid rgba(167,139,250,0.35);
+    padding:10px 18px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:14px;
+  }
   #btConnectBtn:hover{border-color:var(--accent); box-shadow:0 0 14px rgba(0,229,255,0.35);}
-  #btConnectBtn.connected{border-color:var(--accent);color:var(--accent);box-shadow:0 0 14px rgba(0,229,255,0.35);}
-  #btStatus{margin-top:8px;font-size:12px;color:var(--muted);}
+  #btConnectBtn.connected{
+    border-color:var(--accent);
+    color:var(--accent);
+    box-shadow:0 0 14px rgba(0,229,255,0.35);
+  }
+  #btStatus{
+    margin-top:8px;
+    font-size:12px;
+    color:var(--muted);
+  }
   #btStatus.err{color:var(--danger);}
   #btStatus.ok{color:var(--accent);}
-  #credit{margin-top:30px;padding-bottom:10px;font-size:13px;color:var(--muted);letter-spacing:0.5px;}
-  #sessionBar{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;justify-content:center;}
-  #sessionBar select, #sessionBar button{background:var(--panel-solid);color:var(--text);border:1px solid rgba(167,139,250,0.35);padding:6px 10px;border-radius:6px;font-size:12px;cursor:pointer;}
+  #credit{
+    margin-top:30px;
+    padding-bottom:10px;
+    font-size:13px;
+    color:var(--muted);
+    letter-spacing:0.5px;
+  }
+  #sessionBar{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    margin-bottom:10px;
+    flex-wrap:wrap;
+    justify-content:center;
+  }
+  #sessionBar select, #sessionBar button{
+    background:var(--panel-solid);
+    color:var(--text);
+    border:1px solid rgba(167,139,250,0.35);
+    padding:6px 10px;
+    border-radius:6px;
+    font-size:12px;
+    cursor:pointer;
+  }
   #sessionBar select{cursor:pointer;}
   #sessionBar button:hover{border-color:var(--accent); box-shadow:0 0 10px rgba(0,229,255,0.3);}
-  #cubeTypeBar{display:flex;gap:8px;align-items:center;margin-bottom:18px;font-size:12px;color:var(--muted);}
-  #cubeTypeBar select{background:var(--panel-solid);color:var(--text);border:1px solid rgba(167,139,250,0.35);padding:6px 10px;border-radius:6px;font-size:12px;cursor:pointer;}
+  #cubeTypeBar{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    margin-bottom:18px;
+    font-size:12px;
+    color:var(--muted);
+  }
+  #cubeTypeBar select{
+    background:var(--panel-solid);
+    color:var(--text);
+    border:1px solid rgba(167,139,250,0.35);
+    padding:6px 10px;
+    border-radius:6px;
+    font-size:12px;
+    cursor:pointer;
+  }
   #cubeTypeBar select:hover{border-color:var(--accent);}
-  #cubeNetWrap{margin-bottom:20px;}
-  #cubeNetWrap svg{display:block;}
-  #exportBtn{background:transparent;border:1px solid var(--accent);color:var(--accent);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px;margin-right:6px;}
-  #exportBtn:hover{background:var(--accent); color:#111;}
-  .time-row{display:block;padding:6px 0;border-bottom:1px solid rgba(167,139,250,0.15);font-size:14px;font-variant-numeric:tabular-nums;cursor:pointer;}
-  .time-row .row-main{display:flex;justify-content:space-between;}
-  .time-row .row-scramble{display:none;font-size:11px;font-variant-numeric:normal;color:var(--muted);margin-top:4px;letter-spacing:1px;word-break:break-all;}
+  #cubeNetWrap{
+    margin-bottom:20px;
+  }
+  #cubeNetWrap svg{
+    display:block;
+  }
+  .action-btn{
+    background:transparent;
+    border:1px solid var(--accent);
+    color:var(--accent);
+    padding:4px 8px;
+    border-radius:6px;
+    cursor:pointer;
+    font-size:12px;
+    margin-right:4px;
+  }
+  .action-btn:hover{background:var(--accent); color:#111;}
+  .time-row{
+    display:block;
+    padding:6px 0;
+    border-bottom:1px solid rgba(167,139,250,0.15);
+    font-size:14px;
+    font-variant-numeric:tabular-nums;
+    cursor:pointer;
+  }
+  .time-row .row-main{
+    display:flex;
+    justify-content:space-between;
+  }
+  .time-row .row-scramble{
+    display:none;
+    font-size:11px;
+    font-variant-numeric:normal;
+    color:var(--muted);
+    margin-top:4px;
+    letter-spacing:1px;
+    word-break:break-all;
+  }
   .time-row.expanded .row-scramble{display:block;}
   .time-row:last-child{border-bottom:none;}
-  .time-row.best-time{background:linear-gradient(90deg, rgba(255,200,87,0.16), transparent 75%);border-left:3px solid var(--accent2);border-radius:6px;padding-left:9px;margin-left:-3px;}
-  .time-row.best-time .row-main{color:var(--accent2);font-weight:700;}
-  .best-star{margin-right:6px;filter:drop-shadow(0 0 4px rgba(255,200,87,0.6));}
+  .time-row.best-time{
+    background:linear-gradient(90deg, rgba(255,200,87,0.16), transparent 75%);
+    border-left:3px solid var(--accent2);
+    border-radius:6px;
+    padding-left:9px;
+    margin-left:-3px;
+  }
+  .time-row.best-time .row-main{
+    color:var(--accent2);
+    font-weight:700;
+  }
+  .best-star{
+    margin-right:6px;
+    filter:drop-shadow(0 0 4px rgba(255,200,87,0.6));
+  }
 </style>
 </head>
 <body>
@@ -165,6 +475,9 @@
   <select id="cubeTypeSelect">
     <option value="2x2">2x2</option>
     <option value="3x3" selected>3x3</option>
+    <option value="3x3_f2l">3x3 (ฝึก F2L)</option>
+    <option value="3x3_oll">3x3 (ฝึก OLL)</option>
+    <option value="3x3_pll">3x3 (ฝึก PLL)</option>
     <option value="4x4">4x4</option>
     <option value="5x5">5x5</option>
     <option value="pyraminx">Pyraminx</option>
@@ -176,20 +489,35 @@
 <div id="cubeNetWrap"></div>
 
 <div id="timerDisplay">0.00</div>
-<div id="hint">💻 กด <b>Space</b> ค้างไว้ • 📱 แตะที่ตัวเลขค้างไว้ — จนตัวเลขเปลี่ยนสี แล้วปล่อย</div>
+<div id="hint">💻 กด <b>Space</b> ค้างไว้ • 📱 แตะที่ตัวเลขค้างไว้ — จนตัวเลขเปลี่ยนสี แล้วปล่อยเพื่อเริ่มจับเวลา แตะ/กดอีกครั้งเพื่อหยุด</div>
 
 <div id="quickPenaltyBar">
   <button id="penaltyLastBtn" onclick="togglePenalty(0)">⚠️ +2 (เวลาล่าสุด)</button>
   <button id="dnfLastBtn" onclick="toggleDnf(0)">❌ DNF (เวลาล่าสุด)</button>
 </div>
 
-<label id="inspectionToggleWrap">
-  <input type="checkbox" id="inspectionToggle" checked>
-  ใช้เวลาดูลูก 15 วินาที (WCA Inspection)
-</label>
+<div id="configBar">
+  <label id="inspectionToggleWrap">
+    <input type="checkbox" id="inspectionToggle" checked>
+    เวลาดูลูก 15 วิ (WCA Inspection)
+  </label>
+  <label>
+    <input type="checkbox" id="voiceToggle" checked>
+    🔊 อ่านเวลาเสียงพูด
+  </label>
+  <label>
+    🎨 ธีม:
+    <select id="themeSelect">
+      <option value="space">Space Edition</option>
+      <option value="amoled">AMOLED Black</option>
+      <option value="light">Light Mode</option>
+      <option value="cyberpunk">Cyberpunk</option>
+    </select>
+  </label>
+</div>
 
 <div id="btSection">
-  <button id="btConnectBtn">🔗 เชื่อมต่อ Bluetooth Timer (GAN / QiYi)</button>
+  <button id="btConnectBtn">🔗 เชื่อมต่อ Bluetooth Timer (GAN Smart Timer)</button>
   <div id="btStatus">ยังไม่ได้เชื่อมต่อ</div>
 </div>
 
@@ -200,140 +528,1274 @@
   <div class="stat-box"><div class="label">Mean</div><div class="value" id="statMean">-</div></div>
 </div>
 
+<div id="chartContainer">
+  <canvas id="timeChart"></canvas>
+</div>
+
 <div id="history">
-  <h3>ประวัติเวลา <span><button id="exportBtn">Export CSV</button> <button id="clearBtn">ล้างทั้งหมด</button></span></h3>
+  <h3>
+    ประวัติเวลา 
+    <span>
+      <button id="importBtn" class="action-btn" title="นำเข้าไฟล์สำรองข้อมูล JSON">Import JSON</button>
+      <button id="exportJsonBtn" class="action-btn" title="สำรองข้อมูล JSON ไปยังเครื่องอื่น">Export JSON</button>
+      <button id="exportBtn" class="action-btn" title="บันทึกข้อมูลออกเป็นไฟล์สเปรดชีต Excel / CSV">CSV</button> 
+      <button id="clearBtn">ล้างทั้งหมด</button>
+    </span>
+  </h3>
   <div id="historyList"><div class="empty">ยังไม่มีข้อมูล</div></div>
 </div>
 
 <footer id="credit">by Thunder web studio ⚡️</footer>
 
-<!-- BLUETOOTH FIX EMBEDDED -->
 <script>
-// ============================================
-// BLUETOOTH TIMER - GAN & QiYi Smart Timer
-// ============================================
+// ---------- Scramble generator ----------
+const FACES = ['U','D','L','R','F','B'];
+const MODS = ['', "'", '2'];
+const OPPOSITE = {U:'D',D:'U',L:'R',R:'L',F:'B',B:'F'};
 
-const BT_UUIDS = {
-  SERVICE: {
-    GAN: '0000fee7-0000-1000-8000-00805f9b34fb',
-    QIYI: '6e400001-b5a3-f393-e0a9-e50e24dcca9e',
-  },
-  CHARACTERISTIC: {
-    GAN_TIME: '000036f5-0000-1000-8000-00805f9b34fb',
-    QIYI_RX: '6e400002-b5a3-f393-e0a9-e50e24dcca9e',
-    QIYI_TX: '6e400003-b5a3-f393-e0a9-e50e24dcca9e',
+function generateScramble(len=20){
+  let moves = [];
+  let last = '', lastAxis = '';
+  for(let i=0;i<len;i++){
+    let face;
+    do {
+      face = FACES[Math.floor(Math.random()*FACES.length)];
+    } while(face === last || (OPPOSITE[face] === last && face === lastAxis));
+    lastAxis = last;
+    last = face;
+    const mod = MODS[Math.floor(Math.random()*MODS.length)];
+    moves.push(face+mod);
   }
+  return moves.join(' ');
+}
+
+// ---------- Generators for other cube types ----------
+function generateSimpleScramble(faces, mods, len){
+  let moves = [];
+  let last = '';
+  for(let i=0;i<len;i++){
+    let face;
+    do {
+      face = faces[Math.floor(Math.random()*faces.length)];
+    } while(face === last);
+    last = face;
+    const mod = mods[Math.floor(Math.random()*mods.length)];
+    moves.push(face+mod);
+  }
+  return moves.join(' ');
+}
+
+function generateWideScramble(len){
+  const faces = ['U','D','L','R','F','B'];
+  const AXIS = {U:'UD',D:'UD',L:'LR',R:'LR',F:'FB',B:'FB'};
+  const mods = ['', "'", '2'];
+  let moves = [];
+  let lastAxis = '';
+  for(let i=0;i<len;i++){
+    let base;
+    do {
+      base = faces[Math.floor(Math.random()*faces.length)];
+    } while(AXIS[base] === lastAxis);
+    lastAxis = AXIS[base];
+    const wide = Math.random() < 0.5;
+    const mod = mods[Math.floor(Math.random()*mods.length)];
+    moves.push(base + (wide ? 'w' : '') + mod);
+  }
+  return moves.join(' ');
+}
+
+function generatePyraminxScramble(){
+  const faces = ['U','L','R','B'];
+  const mods = ['', "'"];
+  let moves = generateSimpleScramble(faces, mods, 10).split(' ');
+  ['u','l','r','b'].forEach(tip => {
+    if(Math.random() < 0.7){
+      const mod = mods[Math.floor(Math.random()*mods.length)];
+      moves.push(tip+mod);
+    }
+  });
+  return moves.join(' ');
+}
+
+// ข้อมูลสำหรับฝึกส้อม OLL, PLL, F2L
+const OLL_CASES = [
+  "R U2 R2 F R F' U2 R' F R F'", "F R U R' U' F'", "f R U R' U' f'", "f R U R' U' f' U' F R U R' U' F'",
+  "r U R' U' r' F R F'", "F' L' U' L U F", "f' L' U' L U f", "f' L' U' L U f U F' L' U' L U F"
+];
+const PLL_CASES = [
+  "R' U L' U2 R U' R' U2 R L", "R U R' F' R U R' U' R' F R2 U' R'", "x R2 D2 R U R' D2 R U' R",
+  "R U' R U R U R U' R' U' R2", "M2 U M2 U2 M2 U M2", "R' U' R U' R U R U' R' U R U R2 U' R'"
+];
+const F2L_CASES = [
+  "R U R' U' R U R'", "R U' R' U R U' R'", "R U2 R' U' R U R'", "R U' R' U2 R U' R'"
+];
+
+const SCRAMBLERS = {
+  '2x2': () => generateSimpleScramble(['U','R','F'], ['', "'", '2'], 9),
+  '3x3': () => generateScramble(20),
+  '3x3_f2l': () => "F2L: " + F2L_CASES[Math.floor(Math.random() * F2L_CASES.length)],
+  '3x3_oll': () => "OLL: " + OLL_CASES[Math.floor(Math.random() * OLL_CASES.length)],
+  '3x3_pll': () => "PLL: " + PLL_CASES[Math.floor(Math.random() * PLL_CASES.length)],
+  '4x4': () => generateWideScramble(40),
+  '5x5': () => generateWideScramble(60),
+  'pyraminx': generatePyraminxScramble,
+  'skewb': () => generateSimpleScramble(['U','L','R','B'], ['', "'"], 9)
 };
 
-let btDevice = null, btServer = null, btService = null, btChar = null, btConnected = false;
+let currentScramble = '';
 
-async function connectBluetoothTimer() {
-  try {
-    console.log('📱 Requesting BLE device...');
-    btDevice = await navigator.bluetooth.requestDevice({
-      filters: [{name:'GAN'},{name:'GAN-SmartTimer'},{namePrefix:'QiYi'}],
-      optionalServices: [BT_UUIDS.SERVICE.GAN, BT_UUIDS.SERVICE.QIYI]
-    });
-    console.log('✅ Device selected:', btDevice.name);
-    updateBtStatus('เลือกแล้ว: ' + btDevice.name, 'ok');
-    btServer = await btDevice.gatt.connect();
-    console.log('✅ GATT server connected');
-    updateBtStatus('เชื่อมต่อ GATT แล้ว', 'ok');
-    
-    let serviceUUID = null, charUUID = null;
-    try {
-      btService = await btServer.getPrimaryService(BT_UUIDS.SERVICE.GAN);
-      serviceUUID = BT_UUIDS.SERVICE.GAN;
-      charUUID = BT_UUIDS.CHARACTERISTIC.GAN_TIME;
-      console.log('✅ GAN Service found');
-      updateBtStatus('พบ GAN service', 'ok');
-    } catch (e) {
-      console.log('⚠️ GAN not found, trying QiYi...');
-      try {
-        btService = await btServer.getPrimaryService(BT_UUIDS.SERVICE.QIYI);
-        serviceUUID = BT_UUIDS.SERVICE.QIYI;
-        charUUID = BT_UUIDS.CHARACTERISTIC.QIYI_TX;
-        console.log('✅ QiYi Service found');
-        updateBtStatus('พบ QiYi service', 'ok');
-      } catch (e2) {
-        throw new Error('ไม่พบ service ที่รองรับ');
+// ---------- Cube net visualizer ----------
+const CUBE_BASE_MOVES = {
+  U: [2,5,8,1,4,7,0,3,6,18,19,20,12,13,14,15,16,17,36,37,38,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,45,46,47,39,40,41,42,43,44,9,10,11,48,49,50,51,52,53],
+  D: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,24,25,26,18,19,20,21,22,23,42,43,44,33,30,27,34,31,28,35,32,29,36,37,38,39,40,41,51,52,53,45,46,47,48,49,50,15,16,17],
+  L: [53,1,2,50,4,5,47,7,8,9,10,11,12,13,14,15,16,17,0,19,20,3,22,23,6,25,26,18,28,29,21,31,32,24,34,35,42,39,36,43,40,37,44,41,38,45,46,33,48,49,30,51,52,27],
+  R: [0,1,51,3,4,48,6,7,45,11,14,17,10,13,16,9,12,15,18,19,2,21,22,5,24,25,8,27,28,20,30,31,23,33,34,26,36,37,38,39,40,41,42,43,44,35,46,47,32,49,50,29,52,53],
+  F: [0,1,2,3,4,5,9,12,15,29,10,11,28,13,14,27,16,17,20,23,26,19,22,25,18,21,24,38,41,44,30,31,32,33,34,35,36,37,8,39,40,7,42,43,6,45,46,47,48,49,50,51,52,53],
+  B: [11,14,17,3,4,5,6,7,8,9,10,35,12,13,34,15,16,33,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,36,39,42,2,37,38,1,40,41,0,43,44,51,48,45,52,49,46,53,50,47]
+};
+
+function composePerm(p1, p2){
+  const out = new Array(54);
+  for(let i=0;i<54;i++) out[i] = p2[p1[i]];
+  return out;
+}
+function invertPerm(p){
+  const out = new Array(54);
+  for(let i=0;i<54;i++) out[p[i]] = i;
+  return out;
+}
+function getMovePerm(move){
+  const face = move[0];
+  const mod = move.slice(1);
+  const base = CUBE_BASE_MOVES[face];
+  if(mod === "'") return invertPerm(base);
+  if(mod === '2') return composePerm(base, base);
+  return base;
+}
+function applyPerm(stateArr, perm){
+  const out = new Array(54);
+  for(let i=0;i<54;i++) out[perm[i]] = stateArr[i];
+  return out;
+}
+function solvedFacelets(){
+  const order = ['U','R','F','D','L','B'];
+  let arr = [];
+  order.forEach(f => { for(let i=0;i<9;i++) arr.push(f); });
+  return arr;
+}
+function scrambleToFacelets(scrambleStr){
+  let s = solvedFacelets();
+  scrambleStr.trim().split(/\s+/).forEach(mv => {
+    if(!mv || mv.includes(':')) return; // เลี่ยงคำว่า F2L:, OLL:, PLL:
+    s = applyPerm(s, getMovePerm(mv));
+  });
+  return s;
+}
+
+const FACE_COLOR = {
+  U:'#f7f7f7', D:'#ffd500', F:'#00a352', B:'#1054c4', R:'#c8102e', L:'#ff6a00'
+};
+
+function renderCubeNet(scrambleStr){
+  const facelets = scrambleToFacelets(scrambleStr);
+  const idx = { U:0, R:9, F:18, D:27, L:36, B:45 };
+  const S = 22; 
+  const gap = 2;
+  const faceW = S*3 + gap*2;
+
+  const layout = { U:[1,0], L:[0,1], F:[1,1], R:[2,1], B:[3,1], D:[1,2] };
+  const totalW = faceW*4 + 20*3;
+  const totalH = faceW*3 + 20*2;
+
+  function faceSvg(face, ox, oy){
+    let out = '';
+    for(let r=0;r<3;r++){
+      for(let c=0;c<3;c++){
+        const color = FACE_COLOR[facelets[idx[face] + r*3 + c]];
+        const x = ox + c*(S+gap);
+        const y = oy + r*(S+gap);
+        out += `<rect x="${x}" y="${y}" width="${S}" height="${S}" rx="3" fill="${color}" stroke="#0f1115" stroke-width="1.5"/>`;
       }
     }
-    
-    btChar = await btService.getCharacteristic(charUUID);
-    console.log('✅ Characteristic found');
-    if (btChar.properties.notify) {
-      await btChar.startNotifications();
-      btChar.addEventListener('characteristicvaluechanged', onTimerValueChanged);
-      console.log('🔔 Notifications enabled');
-      updateBtStatus('✅ เชื่อมต่อแล้ว - ' + btDevice.name, 'ok');
-    }
-    btDevice.addEventListener('gattserverdisconnected', onBluetoothDisconnected);
-    btConnected = true;
-    document.getElementById('btConnectBtn').classList.add('connected');
-    document.getElementById('btConnectBtn').textContent = '✅ เชื่อมต่อแล้ว';
-  } catch (error) {
-    console.error('❌ Error:', error);
-    updateBtStatus('ข้อผิดพลาด: ' + error.message, 'err');
-    btConnected = false;
+    return out;
   }
+
+  let svg = `<svg viewBox="0 0 ${totalW} ${totalH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:420px;height:auto;margin:0 auto;display:block;">`;
+  Object.keys(layout).forEach(face => {
+    const [gx, gy] = layout[face];
+    const ox = gx*(faceW+20);
+    const oy = gy*(faceW+20);
+    svg += faceSvg(face, ox, oy);
+  });
+  svg += `</svg>`;
+  document.getElementById('cubeNetWrap').innerHTML = svg;
 }
 
-function onTimerValueChanged(event) {
-  const value = event.target.value;
-  let timeMs = null;
-  if (btDevice.name && btDevice.name.includes('GAN')) {
-    timeMs = value.getUint32(0, true);
+function getCurrentCubeType(){
+  const sess = sessionsData.sessions[sessionsData.currentId];
+  return (sess && sess.cubeType) || '3x3';
+}
+
+function newScramble(){
+  const type = getCurrentCubeType();
+  const gen = SCRAMBLERS[type] || SCRAMBLERS['3x3'];
+  currentScramble = gen();
+  document.getElementById('scramble').textContent = currentScramble;
+  document.getElementById('cubeNetWrap').style.display = '';
+  renderPuzzlePreview(type, currentScramble);
+}
+
+// ---------- Seeded PRNG ----------
+function hashSeed(str){
+  let h = 1779033703 ^ str.length;
+  for(let i=0;i<str.length;i++){
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  return function(){
+    h = Math.imul(h ^ (h>>>16), 2246822507);
+    h = Math.imul(h ^ (h>>>13), 3266489909);
+    h ^= h >>> 16;
+    return (h >>> 0) / 4294967296;
+  };
+}
+
+// ---------- Puzzle preview router ----------
+function renderPuzzlePreview(type, scrambleStr){
+  if(type === '3x3' || type === '3x3_f2l' || type === '3x3_oll' || type === '3x3_pll'){
+    // ล้างข้อความกรณีเป็นโหมด Trainer เช่น "F2L: R U R' ..." ให้ดึงแค่ด้านหลังโคลอนมาเรนเดอร์
+    const sc = scrambleStr.includes(':') ? scrambleStr.split(':')[1].trim() : scrambleStr;
+    renderCubeNet(sc);
+  } else if(type === '2x2'){
+    render2x2Net(scrambleStr);
+  } else if(type === '4x4'){
+    renderNxNNet(4, scrambleStr);
+  } else if(type === '5x5'){
+    renderNxNNet(5, scrambleStr);
+  } else if(type === 'pyraminx'){
+    renderPyraminxNet(scrambleStr);
+  } else if(type === 'skewb'){
+    renderSkewbNet(scrambleStr);
   } else {
-    let text = new TextDecoder().decode(value);
-    if (!isNaN(parseFloat(text))) {
-      timeMs = Math.round(parseFloat(text) * 100);
-    }
-  }
-  if (timeMs !== null && timeMs > 0) {
-    console.log('⏱️ Timer: ' + (timeMs / 1000).toFixed(2) + 's');
-    if (state === 'running') {
-      handleTimerComplete(timeMs);
-    }
+    renderCubeNet(scrambleStr);
   }
 }
 
-function handleTimerComplete(timeMs) {
-  cancelAnimationFrame(rafId);
-  const penalty = pendingPenalty;
+// 2x2: corner stickers only
+function render2x2Net(scrambleStr){
+  const facelets = scrambleToFacelets(scrambleStr);
+  const idx = { U:0, R:9, F:18, D:27, L:36, B:45 };
+  const cornerPos = [0,2,6,8]; 
+  const cornerXY  = [[0,0],[1,0],[0,1],[1,1]];
+  const S = 34, gap = 3;
+  const faceW = S*2 + gap;
+  const layout = { U:[1,0], L:[0,1], F:[1,1], R:[2,1], B:[3,1], D:[1,2] };
+  const totalW = faceW*4 + 20*3;
+  const totalH = faceW*3 + 20*2;
+  function faceSvg(face, ox, oy){
+    let out = '';
+    cornerPos.forEach((ci, k)=>{
+      const color = FACE_COLOR[facelets[idx[face]+ci]];
+      const [c,r] = cornerXY[k];
+      const x = ox + c*(S+gap);
+      const y = oy + r*(S+gap);
+      out += `<rect x="${x}" y="${y}" width="${S}" height="${S}" rx="3" fill="${color}" stroke="#05050f" stroke-width="1.5"/>`;
+    });
+    return out;
+  }
+  let svg = `<svg viewBox="0 0 ${totalW} ${totalH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:420px;height:auto;margin:0 auto;display:block;">`;
+  Object.keys(layout).forEach(face => {
+    const [gx, gy] = layout[face];
+    const ox = gx*(faceW+20);
+    const oy = gy*(faceW+20);
+    svg += faceSvg(face, ox, oy);
+  });
+  svg += `</svg>`;
+  document.getElementById('cubeNetWrap').innerHTML = svg;
+}
+
+// 4x4 / 5x5: illustrative net
+function renderNxNNet(N, scrambleStr){
+  const rand = hashSeed('nxn'+N+scrambleStr);
+  const colorList = ['U','D','F','B','R','L'].map(f => FACE_COLOR[f]);
+  const S = N <= 4 ? 16 : 13;
+  const gap = 2;
+  const faceW = S*N + gap*(N-1);
+  const layout = { U:[1,0], L:[0,1], F:[1,1], R:[2,1], B:[3,1], D:[1,2] };
+  const totalW = faceW*4 + 20*3;
+  const totalH = faceW*3 + 20*2;
+  const isOdd = N % 2 === 1;
+  const centerIdx = (N-1)/2;
+  function faceSvg(face, ox, oy){
+    let out = '';
+    for(let r=0;r<N;r++){
+      for(let c=0;c<N;c++){
+        let color;
+        if(isOdd && r===centerIdx && c===centerIdx){
+          color = FACE_COLOR[face];
+        } else {
+          color = colorList[Math.floor(rand()*colorList.length)];
+        }
+        const x = ox + c*(S+gap);
+        const y = oy + r*(S+gap);
+        out += `<rect x="${x}" y="${y}" width="${S}" height="${S}" rx="2" fill="${color}" stroke="#05050f" stroke-width="1"/>`;
+      }
+    }
+    return out;
+  }
+  let svg = `<svg viewBox="0 0 ${totalW} ${totalH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:420px;height:auto;margin:0 auto;display:block;">`;
+  Object.keys(layout).forEach(face => {
+    const [gx, gy] = layout[face];
+    const ox = gx*(faceW+20);
+    const oy = gy*(faceW+20);
+    svg += faceSvg(face, ox, oy);
+  });
+  svg += `</svg>`;
+  document.getElementById('cubeNetWrap').innerHTML = svg;
+}
+
+// Triangular grid subdivision helper
+function triSubdiv(L, n){
+  const h = L*Math.sqrt(3)/2;
+  const A = [L/2, 0];
+  const stepB = [-L/2/n, h/n];
+  const stepC = [ L/2/n, h/n];
+  function P(i,j){ return [A[0]+i*stepB[0]+j*stepC[0], A[1]+i*stepB[1]+j*stepC[1]]; }
+  const tris = [];
+  for(let i=0;i<n;i++){
+    for(let j=0;j<n-i;j++){
+      tris.push([P(i,j), P(i+1,j), P(i,j+1)]);
+      if(i+j <= n-2){
+        tris.push([P(i+1,j), P(i,j+1), P(i+1,j+1)]);
+      }
+    }
+  }
+  return tris;
+}
+
+// Pyraminx: 4 triangular faces
+function renderPyraminxNet(scrambleStr){
+  const rand = hashSeed('pyra'+scrambleStr);
+  const colors = ['#00a352','#c8102e','#1054c4','#ffd500'];
+  const L = 90;
+  const h = L*Math.sqrt(3)/2;
+  const tris = triSubdiv(L, 3);
+  const gapX = 20;
+  const totalW = L*4 + gapX*3;
+  const totalH = h + 6;
+  let svg = `<svg viewBox="0 0 ${totalW} ${totalH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:420px;height:auto;margin:0 auto;display:block;">`;
+  for(let f=0; f<4; f++){
+    const ox = f*(L+gapX);
+    tris.forEach(tri => {
+      const col = rand() < 0.55 ? colors[f] : colors[Math.floor(rand()*colors.length)];
+      const pts = tri.map(p => `${(p[0]+ox).toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+      svg += `<polygon points="${pts}" fill="${col}" stroke="#05050f" stroke-width="1.2"/>`;
+    });
+  }
+  svg += `</svg>`;
+  document.getElementById('cubeNetWrap').innerHTML = svg;
+}
+
+// Skewb
+function renderSkewbNet(scrambleStr){
+  const rand = hashSeed('skewb'+scrambleStr);
+  const colorList = Object.values(FACE_COLOR);
+  const faceOrder = ['U','L','F','R','B','D'];
+  const layout = { U:[1,0], L:[0,1], F:[1,1], R:[2,1], B:[3,1], D:[1,2] };
+  const S = 70, gap = 20;
+  const totalW = S*4 + gap*3;
+  const totalH = S*3 + gap*2;
+  function pieceColor(face){
+    return rand() < 0.4 ? FACE_COLOR[face] : colorList[Math.floor(rand()*colorList.length)];
+  }
+  function faceSvg(face, ox, oy){
+    const L = S;
+    const c1 = pieceColor(face), c2 = pieceColor(face), c3 = pieceColor(face), c4 = pieceColor(face), cc = pieceColor(face);
+    let out = '';
+    out += `<polygon points="${ox},${oy} ${ox+L/2},${oy} ${ox},${oy+L/2}" fill="${c1}" stroke="#05050f" stroke-width="1.2"/>`;
+    out += `<polygon points="${ox+L},${oy} ${ox+L},${oy+L/2} ${ox+L/2},${oy}" fill="${c2}" stroke="#05050f" stroke-width="1.2"/>`;
+    out += `<polygon points="${ox+L},${oy+L} ${ox+L/2},${oy+L} ${ox+L},${oy+L/2}" fill="${c3}" stroke="#05050f" stroke-width="1.2"/>`;
+    out += `<polygon points="${ox},${oy+L} ${ox},${oy+L/2} ${ox+L/2},${oy+L}" fill="${c4}" stroke="#05050f" stroke-width="1.2"/>`;
+    out += `<polygon points="${ox+L/2},${oy} ${ox+L},${oy+L/2} ${ox+L/2},${oy+L} ${ox},${oy+L/2}" fill="${cc}" stroke="#05050f" stroke-width="1.2"/>`;
+    return out;
+  }
+  let svg = `<svg viewBox="0 0 ${totalW} ${totalH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:420px;height:auto;margin:0 auto;display:block;">`;
+  faceOrder.forEach(face => {
+    const [gx, gy] = layout[face];
+    const ox = gx*(S+gap);
+    const oy = gy*(S+gap);
+    svg += faceSvg(face, ox, oy);
+  });
+  svg += `</svg>`;
+  document.getElementById('cubeNetWrap').innerHTML = svg;
+}
+
+// ---------- Timer logic ----------
+const display = document.getElementById('timerDisplay');
+const inspectionToggle = document.getElementById('inspectionToggle');
+const voiceToggle = document.getElementById('voiceToggle');
+const themeSelect = document.getElementById('themeSelect');
+
+let state = 'idle'; 
+let holdOrigin = null;
+let holdTimeout = null;
+let startTime = 0;
+let rafId = null;
+
+let inspectionEnabled = true;
+inspectionToggle.addEventListener('change', ()=>{
+  inspectionEnabled = inspectionToggle.checked;
+});
+
+let inspectionStart = 0;
+let inspectionRaf = null;
+let pendingPenalty = 0; 
+let beepedWarn = false;
+
+function formatTime(ms){
+  const totalSec = ms/1000;
+  const min = Math.floor(totalSec/60);
+  const sec = (totalSec - min*60).toFixed(2);
+  if(min>0){
+    return min + ':' + sec.padStart(5,'0');
+  }
+  return sec;
+}
+
+// ระบบ TTS สังเคราะห์คำอ่านภาษาอังกฤษ
+function speakTime(ms, isDnf=false){
+  if(!voiceToggle.checked) return;
+  if('speechSynthesis' in window){
+    window.speechSynthesis.cancel(); // ดึงการออกเสียงค้างไว้ออกก่อนเริ่มใหม่
+    let textToSay = "";
+    if(isDnf){
+      textToSay = "D N F";
+    } else {
+      textToSay = (ms/1000).toFixed(2) + " seconds";
+    }
+    const utterance = new SpeechSynthesisUtterance(textToSay);
+    utterance.lang = 'en-US';
+    utterance.rate = 1.1; 
+    window.speechSynthesis.speak(utterance);
+  }
+}
+
+function beep(freq=880, dur=120){
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.frequency.value = freq;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    osc.start();
+    osc.stop(ctx.currentTime + dur/1000);
+  }catch(err){ }
+}
+
+function tick(){
+  const elapsed = Date.now() - startTime;
+  display.textContent = formatTime(elapsed);
+  rafId = requestAnimationFrame(tick);
+}
+
+function clearInspectVisualClasses(){
+  display.classList.remove('inspecting','inspect-warn','inspect-danger','penalty','dnf');
+}
+
+function startInspection(){
+  state = 'inspecting';
+  clearInspectVisualClasses();
+  display.classList.add('inspecting');
+  inspectionStart = Date.now();
+  beepedWarn = false;
   pendingPenalty = 0;
-  let elapsed = timeMs;
-  if (penalty) elapsed += penalty * 1000;
-  display.textContent = formatTime(elapsed) + (penalty ? ' (+2)' : '');
-  display.classList.remove('go');
+  inspectionTick();
+}
+
+function stopInspection(){
+  cancelAnimationFrame(inspectionRaf);
+  clearInspectVisualClasses();
+}
+
+function inspectionTick(){
+  const elapsed = (Date.now() - inspectionStart) / 1000;
+  const remaining = 15 - elapsed;
+
+  if(remaining > 0){
+    display.textContent = Math.ceil(remaining).toString();
+    clearInspectVisualClasses();
+    if(remaining <= 3){
+      display.classList.add('inspect-danger');
+      if(!beepedWarn){ beep(1046, 100); beepedWarn = true; }
+    } else if(remaining <= 8){
+      display.classList.add('inspect-warn');
+    } else {
+      display.classList.add('inspecting');
+    }
+  } else {
+    const over = -remaining; 
+    if(over <= 2){
+      display.textContent = '+2';
+      clearInspectVisualClasses();
+      display.classList.add('penalty');
+      pendingPenalty = 2;
+    } else {
+      display.textContent = 'DNF';
+      clearInspectVisualClasses();
+      display.classList.add('dnf');
+      cancelAnimationFrame(inspectionRaf);
+      finalizeDnf();
+      return;
+    }
+  }
+  inspectionRaf = requestAnimationFrame(inspectionTick);
+}
+
+function finalizeDnf(){
+  saveTime(null, true);
   state = 'idle';
-  saveTime(elapsed, false, penalty);
   newScramble();
-  updateBtStatus('บันทึก: ' + formatTime(elapsed), 'ok');
+  setTimeout(()=>{
+    clearInspectVisualClasses();
+    display.textContent = '0.00';
+  }, 1200);
 }
 
-function onBluetoothDisconnected(event) {
-  console.log('⚠️ Device disconnected:', event.target.name);
-  btConnected = false;
-  btDevice = null;
-  btServer = null;
-  btService = null;
-  btChar = null;
-  document.getElementById('btConnectBtn').classList.remove('connected');
-  document.getElementById('btConnectBtn').textContent = '🔗 เชื่อมต่อ Bluetooth Timer';
-  updateBtStatus('ยังไม่ได้เชื่อมต่อ', 'err');
+function pressStart(){
+  if(state === 'running'){
+    cancelAnimationFrame(rafId);
+    let elapsed = Date.now() - startTime;
+    const penalty = pendingPenalty;
+    pendingPenalty = 0;
+    if(penalty) elapsed += penalty*1000;
+    display.textContent = formatTime(elapsed) + (penalty ? ' (+2)' : '');
+    display.classList.remove('go');
+    state = 'idle';
+    saveTime(elapsed, false, penalty);
+    newScramble();
+    return;
+  }
+
+  if(state === 'idle' || state === 'inspecting'){
+    holdOrigin = state;
+    state = 'holding';
+    holdTimeout = setTimeout(()=>{
+      state = 'ready';
+      display.classList.add('ready');
+    }, 300); 
+  }
 }
 
-function updateBtStatus(msg, status) {
-  const statusEl = document.getElementById('btStatus');
-  statusEl.textContent = msg;
-  statusEl.className = status;
+function pressEnd(){
+  if(state === 'holding'){
+    clearTimeout(holdTimeout);
+    state = holdOrigin || 'idle';
+    holdOrigin = null;
+    return;
+  }
+
+  if(state === 'ready'){
+    display.classList.remove('ready');
+    const origin = holdOrigin;
+    holdOrigin = null;
+
+    if(origin === 'idle' && inspectionEnabled){
+      startInspection();
+      return;
+    }
+
+    if(origin === 'inspecting'){
+      stopInspection();
+    }
+
+    display.classList.add('go');
+    state = 'running';
+    startTime = Date.now();
+    tick();
+  }
 }
 
-document.getElementById('btConnectBtn').addEventListener('click', connectBluetoothTimer);
-console.log('🚀 Bluetooth module loaded');
+function keyDown(e){
+  if(e.code !== 'Space') return;
+  e.preventDefault();
+  if(e.repeat) return;
+  pressStart();
+}
+
+function keyUp(e){
+  if(e.code !== 'Space') return;
+  e.preventDefault();
+  pressEnd();
+}
+
+document.addEventListener('keydown', keyDown);
+document.addEventListener('keyup', keyUp);
+
+// ---------- Keyboard Shortcuts ( Alt/Shift Shortcuts ) ----------
+document.addEventListener('keydown', (e) => {
+  // ไม่ทำงานถ้ากำลังจับเวลาอยู่
+  if(state === 'running' || state === 'holding' || state === 'ready') return;
+  
+  // Alt + 2 หรือ Shift + 2: สลับค่า +2 ล่าสุด
+  if((e.altKey || e.shiftKey) && e.key === '2'){
+    e.preventDefault();
+    togglePenalty(0);
+  }
+  
+  // Alt + D หรือ Shift + D: สลับ DNF ล่าสุด
+  if((e.altKey || e.shiftKey) && (e.key === 'd' || e.key === 'D')){
+    e.preventDefault();
+    toggleDnf(0);
+  }
+  
+  // Escape หรือ Alt + Z หรือ Shift + Z: ลบข้อมูลล่าสุดทิ้ง
+  if(e.key === 'Escape' || ((e.altKey || e.shiftKey) && (e.key === 'z' || e.key === 'Z'))){
+    e.preventDefault();
+    if(times.length > 0){
+      if(confirm('คุณต้องการลบข้อมูลเวลาล่าสุด ใช่หรือไม่?')){
+        deleteTime(0);
+      }
+    }
+  }
+});
+
+// ---------- Touch support ----------
+display.addEventListener('touchstart', (e)=>{
+  e.preventDefault();
+  pressStart();
+}, { passive:false });
+
+display.addEventListener('touchend', (e)=>{
+  e.preventDefault();
+  pressEnd();
+}, { passive:false });
+
+display.addEventListener('touchcancel', (e)=>{
+  e.preventDefault();
+  pressEnd();
+}, { passive:false });
+
+display.addEventListener('contextmenu', (e)=> e.preventDefault());
+
+// ---------- Sessions & History & stats ----------
+const SESSIONS_KEY = 'rubikTimerSessions';
+const LEGACY_KEY = 'rubikTimerHistory'; 
+
+let sessionsData = { sessions: {}, currentId: null };
+let times = []; 
+let myChart = null; // เก็บอินสแตนซ์ของกราฟ
+
+function uid(){
+  return 's' + Date.now() + Math.floor(Math.random()*1000);
+}
+
+function loadSessions(){
+  try{
+    const raw = localStorage.getItem(SESSIONS_KEY);
+    if(raw){
+      sessionsData = JSON.parse(raw);
+    } else {
+      let legacyTimes = [];
+      try{
+        const legacyRaw = localStorage.getItem(LEGACY_KEY);
+        legacyTimes = legacyRaw ? JSON.parse(legacyRaw) : [];
+      }catch(err){ legacyTimes = []; }
+
+      const id = uid();
+      sessionsData = {
+        sessions: { [id]: { name: 'Session 1', times: legacyTimes, cubeType: '3x3' } },
+        currentId: id
+      };
+      persistSessions();
+    }
+  }catch(err){
+    const id = uid();
+    sessionsData = { sessions: { [id]: { name: 'Session 1', times: [], cubeType: '3x3' } }, currentId: id };
+  }
+
+  if(!sessionsData.currentId || !sessionsData.sessions[sessionsData.currentId]){
+    sessionsData.currentId = Object.keys(sessionsData.sessions)[0];
+  }
+  Object.values(sessionsData.sessions).forEach(s => {
+    if(!s.cubeType) s.cubeType = '3x3';
+  });
+  times = sessionsData.sessions[sessionsData.currentId].times;
+}
+
+function persistSessions(){
+  try{
+    localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessionsData));
+  }catch(err){
+    console.error('Save failed', err);
+  }
+}
+
+function populateSessionSelect(){
+  const sel = document.getElementById('sessionSelect');
+  sel.innerHTML = Object.entries(sessionsData.sessions).map(([id, s]) =>
+    `<option value="${id}" ${id===sessionsData.currentId?'selected':''}>${escapeHtml(s.name)} [${s.cubeType||'3x3'}] (${s.times.length})</option>`
+  ).join('');
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+
+function syncCubeTypeSelect(){
+  const sel = document.getElementById('cubeTypeSelect');
+  sel.value = getCurrentCubeType();
+}
+
+function switchSession(id){
+  if(!sessionsData.sessions[id]) return;
+  sessionsData.currentId = id;
+  times = sessionsData.sessions[id].times;
+  persistSessions();
+  populateSessionSelect();
+  syncCubeTypeSelect();
+  renderHistory();
+  renderStats();
+  newScramble();
+}
+
+function newSession(){
+  const name = prompt('ตั้งชื่อ session ใหม่:', 'Session ' + (Object.keys(sessionsData.sessions).length + 1));
+  if(!name) return;
+  const id = uid();
+  sessionsData.sessions[id] = { name: name.trim() || 'Session', times: [], cubeType: '3x3' };
+  switchSession(id);
+}
+
+function renameSession(){
+  const cur = sessionsData.sessions[sessionsData.currentId];
+  const name = prompt('เปลี่ยนชื่อ session:', cur.name);
+  if(!name) return;
+  cur.name = name.trim() || cur.name;
+  persistSessions();
+  populateSessionSelect();
+}
+
+function deleteSession(){
+  const ids = Object.keys(sessionsData.sessions);
+  if(ids.length <= 1){
+    alert('ต้องมีอย่างน้อย 1 session เสมอ');
+    return;
+  }
+  if(!confirm('ลบ session "' + sessionsData.sessions[sessionsData.currentId].name + '" พร้อมประวัติทั้งหมด?')) return;
+  delete sessionsData.sessions[sessionsData.currentId];
+  const nextId = Object.keys(sessionsData.sessions)[0];
+  switchSession(nextId);
+}
+
+document.getElementById('sessionSelect').addEventListener('change', (e)=> switchSession(e.target.value));
+document.getElementById('newSessionBtn').addEventListener('click', newSession);
+document.getElementById('renameSessionBtn').addEventListener('click', renameSession);
+document.getElementById('deleteSessionBtn').addEventListener('click', deleteSession);
+
+document.getElementById('cubeTypeSelect').addEventListener('change', (e)=>{
+  sessionsData.sessions[sessionsData.currentId].cubeType = e.target.value;
+  persistSessions();
+  newScramble();
+});
+
+function saveTime(ms, isDnf=false, penalty=0){
+  times.unshift({ time: isDnf ? null : ms, dnf: isDnf, penalty: penalty, scramble: currentScramble, cubeType: getCurrentCubeType(), at: Date.now() });
+  persistSessions();
+  populateSessionSelect();
+  renderHistory();
+  renderStats();
+  speakTime(ms, isDnf); // เรียกใช้อ่านเสียงพูดทุกครั้งเมื่อบิดเสร็จ
+}
+
+function deleteTime(idx){
+  times.splice(idx,1);
+  persistSessions();
+  populateSessionSelect();
+  renderHistory();
+  renderStats();
+}
+
+function clearAll(){
+  if(!confirm('ล้างประวัติเวลาทั้งหมดใน session นี้?')) return;
+  times.length = 0;
+  persistSessions();
+  populateSessionSelect();
+  renderHistory();
+  renderStats();
+}
+
+document.getElementById('clearBtn').addEventListener('click', clearAll);
+
+function displayTimeFor(t){
+  if(t.dnf) return 'DNF';
+  return formatTime(t.time) + (t.penalty ? ' (+2)' : '');
+}
+
+function togglePenalty(i){
+  if(times.length === 0 || !times[i]) return;
+  const t = times[i];
+  if(t.dnf) return; 
+  if(t.penalty){
+    t.time -= t.penalty*1000;
+    t.penalty = 0;
+  } else {
+    t.time += 2000;
+    t.penalty = 2;
+  }
+  persistSessions();
+  renderHistory();
+  renderStats();
+}
+
+function toggleDnf(i){
+  if(times.length === 0 || !times[i]) return;
+  const t = times[i];
+  if(t.dnf){
+    t.time = (t._raw !== undefined) ? t._raw : 0;
+    delete t._raw;
+    t.dnf = false;
+  } else {
+    t._raw = t.time;
+    t.penalty = 0;
+    t.time = null;
+    t.dnf = true;
+  }
+  persistSessions();
+  renderHistory();
+  renderStats();
+}
+
+function updateQuickPenaltyBar(){
+  const penBtn = document.getElementById('penaltyLastBtn');
+  const dnfBtn = document.getElementById('dnfLastBtn');
+  const has = times.length > 0;
+  penBtn.disabled = !has || times[0].dnf;
+  dnfBtn.disabled = !has;
+  penBtn.classList.toggle('active', has && !!times[0].penalty);
+  dnfBtn.classList.toggle('active', has && !!times[0].dnf);
+}
+
+function toggleRow(idx){
+  const row = document.getElementById('row-' + idx);
+  if(row) row.classList.toggle('expanded');
+}
+
+function renderHistory(){
+  const list = document.getElementById('historyList');
+  updateQuickPenaltyBar();
+  if(times.length === 0){
+    list.innerHTML = '<div class="empty">ยังไม่มีข้อมูล</div>';
+    return;
+  }
+  let bestIdx = -1, bestVal = Infinity;
+  times.forEach((t, i) => {
+    if(!t.dnf && t.time < bestVal){ bestVal = t.time; bestIdx = i; }
+  });
+  list.innerHTML = times.map((t, i) => `
+    <div class="time-row${i===bestIdx?' best-time':''}" id="row-${i}" onclick="toggleRow(${i})">
+      <div class="row-main">
+        <span><span class="idx">#${times.length - i}</span>${i===bestIdx?'<span class="best-star" title="เวลาที่ดีที่สุดใน session นี้">🏆</span>':''}${displayTimeFor(t)}</span>
+        <span class="row-actions">
+          <span class="pen-btn${t.penalty?' active':''}" onclick="event.stopPropagation(); togglePenalty(${i})">+2</span>
+          <span class="dnf-btn${t.dnf?' active':''}" onclick="event.stopPropagation(); toggleDnf(${i})">DNF</span>
+          <span class="del" onclick="event.stopPropagation(); deleteTime(${i})">ลบ</span>
+        </span>
+      </div>
+      <div class="row-scramble">${t.cubeType ? '<b>['+escapeHtml(t.cubeType)+']</b> ' : ''}${escapeHtml(t.scramble || '')}</div>
+    </div>
+  `).join('');
+}
+
+function average(arr){
+  if(arr.length === 0) return null;
+  const sum = arr.reduce((a,b)=>a+b,0);
+  return sum/arr.length;
+}
+
+function averageOfN(n){
+  if(times.length < n) return null;
+  const slice = times.slice(0,n);
+  const dnfCount = slice.filter(t=>t.dnf).length;
+  if(dnfCount > 1) return 'DNF'; 
+  const numeric = slice.map(t => t.dnf ? Infinity : t.time).sort((a,b)=>a-b);
+  const trimmed = numeric.slice(1, numeric.length-1);
+  if(trimmed.some(v => v === Infinity)) return 'DNF';
+  return average(trimmed);
+}
+
+// อัปเดตกราฟ Chart.js ด้านความเร็ว
+function updateChart(){
+  const chartDiv = document.getElementById('chartContainer');
+  if(times.length < 2){
+    chartDiv.style.display = 'none';
+    return;
+  }
+  chartDiv.style.display = 'block';
+
+  // เรียงลำดับจากเก่าสุดไปหาล่าสุดสำหรับทำกราฟ
+  const chartTimes = [...times].reverse();
+  const labels = chartTimes.map((t, i) => '#' + (i + 1));
+  const dataVals = chartTimes.map(t => t.dnf ? null : (t.time/1000));
+
+  // ตรวจหา Variable Colors ตามธีมเบราว์เซอร์ปัจจุบัน
+  const style = getComputedStyle(document.body);
+  const accentColor = style.getPropertyValue('--accent').trim() || '#00e5ff';
+  const textColor = style.getPropertyValue('--text').trim() || '#e9e8ff';
+
+  if(myChart){
+    myChart.data.labels = labels;
+    myChart.data.datasets[0].data = dataVals;
+    myChart.data.datasets[0].borderColor = accentColor;
+    myChart.options.scales.x.ticks.color = textColor;
+    myChart.options.scales.y.ticks.color = textColor;
+    myChart.update();
+  } else {
+    const ctx = document.getElementById('timeChart').getContext('2d');
+    myChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'ความเร็ว (วินาที)',
+          data: dataVals,
+          borderColor: accentColor,
+          tension: 0.2,
+          fill: false,
+          spanGaps: true
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: { ticks: { color: textColor } },
+          y: { ticks: { color: textColor } }
+        }
+      }
+    });
+  }
+}
+
+function renderStats(){
+  const validTimes = times.filter(t=>!t.dnf).map(t=>t.time);
+  const best = validTimes.length ? Math.min(...validTimes) : null;
+  const ao5 = averageOfN(5);
+  const ao12 = averageOfN(12);
+  const mean = validTimes.length ? average(validTimes) : null;
+
+  const fmt = (v) => v === null ? '-' : (v === 'DNF' ? 'DNF' : formatTime(v));
+
+  document.getElementById('statBest').textContent = best !== null ? formatTime(best) : '-';
+  document.getElementById('statAo5').textContent = fmt(ao5);
+  document.getElementById('statAo12').textContent = fmt(ao12);
+  document.getElementById('statMean').textContent = mean !== null ? formatTime(mean) : '-';
+  
+  updateChart(); // เรียกพล็อตกราฟซ้ำทุกครั้งที่มีการอัปเดตสถิติ
+}
+
+function exportCsv(){
+  if(times.length === 0){
+    alert('ยังไม่มีข้อมูลใน session นี้');
+    return;
+  }
+  const rows = [['#','ประเภท','เวลา (วินาที)','สถานะ','เพนัลตี้','scramble','เวลาที่บันทึก']];
+  times.forEach((t, i) => {
+    rows.push([
+      times.length - i,
+      t.cubeType || '3x3',
+      t.dnf ? '' : (t.time/1000).toFixed(2),
+      t.dnf ? 'DNF' : 'OK',
+      t.penalty ? '+2' : '',
+      '"' + (t.scramble||'').replace(/"/g,'""') + '"',
+      new Date(t.at).toLocaleString('th-TH')
+    ]);
+  });
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const sessName = sessionsData.sessions[sessionsData.currentId].name.replace(/[^a-zA-Z0-9ก-๙_-]/g,'_');
+  a.href = url;
+  a.download = `rubik_times_${sessName}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ---------- Backup / Restore (JSON) ----------
+function exportJson(){
+  const blob = new Blob([JSON.stringify(sessionsData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `cube_timer_backup_${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importJson(){
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = e => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = readerEvent => {
+      try {
+        const parsed = JSON.parse(readerEvent.target.result);
+        if(parsed.sessions && parsed.currentId){
+          sessionsData = parsed;
+          persistSessions();
+          loadSessions();
+          populateSessionSelect();
+          syncCubeTypeSelect();
+          renderHistory();
+          renderStats();
+          newScramble();
+          alert('นำเข้าข้อมูลสำเร็จแล้ว!');
+        } else {
+          alert('รูปแบบไฟล์ไม่ถูกต้อง');
+        }
+      } catch (err) {
+        alert('เกิดข้อผิดพลาดในการนำเข้าไฟล์: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+document.getElementById('exportBtn').addEventListener('click', exportCsv);
+document.getElementById('exportJsonBtn').addEventListener('click', exportJson);
+document.getElementById('importBtn').addEventListener('click', importJson);
+
+// ---------- GAN Smart Timer (Bluetooth) ----------
+const GAN_SERVICE_UUID = '0000fff0-0000-1000-8000-00805f9b34fb';
+const GAN_TIMER_STATE_CHAR = '0000fff5-0000-1000-8000-00805f9b34fb';
+
+const GAN_STATE = {
+  0x01: 'GET_SET',
+  0x02: 'HANDS_OFF',
+  0x03: 'RUNNING',
+  0x04: 'STOPPED',
+  0x05: 'IDLE',
+  0x06: 'HANDS_ON',
+  0x07: 'FINISHED'
+};
+
+let btDevice = null;
+let btServer = null;
+let btConnected = false;
+
+const btBtn = document.getElementById('btConnectBtn');
+const btStatus = document.getElementById('btStatus');
+
+function setBtStatus(text, cls){
+  btStatus.textContent = text;
+  btStatus.className = cls || '';
+}
+
+function parseGanTimerPacket(dataView){
+  const bytes = new Uint8Array(dataView.buffer);
+  if(bytes[0] !== 0xFE) return null;
+  const len = bytes[1];
+  const payload = bytes.slice(2, 2+len);
+  const state = payload[1];
+  let recordedMs = null;
+  if(state === 0x04 || state === 0x05){
+    const minutes = payload[2];
+    const seconds = payload[3];
+    const msLo = payload[4];
+    const msHi = payload[5];
+    const ms = msLo + msHi*256;
+    recordedMs = minutes*60000 + seconds*1000 + ms;
+  }
+  return { state, recordedMs };
+}
+
+function handleGanTimerEvent(event){
+  const value = event.target.value;
+  const parsed = parseGanTimerPacket(value);
+  if(!parsed) return;
+  const stateName = GAN_STATE[parsed.state];
+
+  switch(stateName){
+    case 'HANDS_ON':
+      display.classList.remove('go');
+      if(inspectionEnabled){
+        startInspection();
+      } else {
+        clearInspectVisualClasses();
+        display.classList.add('ready');
+        display.textContent = '0.00';
+      }
+      break;
+    case 'HANDS_OFF':
+    case 'GET_SET':
+      if(state !== 'inspecting'){
+        display.classList.remove('go');
+        display.classList.remove('ready');
+      }
+      break;
+    case 'RUNNING':
+      if(state === 'inspecting') stopInspection();
+      display.classList.remove('ready');
+      display.classList.add('go');
+      state = 'running';
+      startTime = Date.now();
+      tick();
+      break;
+    case 'STOPPED':
+      cancelAnimationFrame(rafId);
+      display.classList.remove('go');
+      if(parsed.recordedMs !== null){
+        const penalty = pendingPenalty;
+        pendingPenalty = 0;
+        const total = parsed.recordedMs + penalty*1000;
+        display.textContent = formatTime(total) + (penalty ? ' (+2)' : '');
+        state = 'idle';
+        saveTime(total, false, penalty);
+        newScramble();
+      }
+      break;
+    case 'IDLE':
+      break;
+    default:
+      break;
+  }
+}
+
+async function connectGanTimer(){
+  if(!navigator.bluetooth){
+    setBtStatus('เบราว์เซอร์นี้ไม่รองรับ Web Bluetooth API (ลองใช้ Chrome บน Desktop/Android)', 'err');
+    return;
+  }
+  try{
+    setBtStatus('กำลังค้นหาอุปกรณ์...');
+    try{
+      btDevice = await navigator.bluetooth.requestDevice({
+        filters: [
+          { services: [GAN_SERVICE_UUID] },
+          { namePrefix: 'GAN' },
+          { namePrefix: 'GoCube' },
+          { namePrefix: 'MoYu' },
+          { namePrefix: 'QY-Timer' },
+          { namePrefix: 'QIYI' }
+        ],
+        optionalServices: [GAN_SERVICE_UUID]
+      });
+    }catch(innerErr){
+      setBtStatus('ไม่เจอด้วยตัวกรองเฉพาะ กำลังเปิดหาอุปกรณ์ BLE ทั้งหมด...');
+      btDevice = await navigator.bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: [GAN_SERVICE_UUID]
+      });
+    }
+
+    btDevice.addEventListener('gattserverdisconnected', () => {
+      btConnected = false;
+      btBtn.textContent = '🔗 เชื่อมต่อ Bluetooth Timer (GAN Smart Timer)';
+      btBtn.classList.remove('connected');
+      setBtStatus('การเชื่อมต่อถูกตัด');
+    });
+
+    setBtStatus('กำลังเชื่อมต่อ GATT...');
+    btServer = await btDevice.gatt.connect();
+
+    const service = await btServer.getPrimaryService(GAN_SERVICE_UUID);
+    const stateChar = await service.getCharacteristic(GAN_TIMER_STATE_CHAR);
+
+    await stateChar.startNotifications();
+    stateChar.addEventListener('characteristicvaluechanged', handleGanTimerEvent);
+
+    btConnected = true;
+    btBtn.textContent = '✅ เชื่อมต่อแล้ว: ' + (btDevice.name || 'GAN Timer');
+    btBtn.classList.add('connected');
+    setBtStatus('พร้อมใช้งาน — วางมือทั้งสองข้างบนตัวจับเวลาเพื่อเริ่ม', 'ok');
+  }catch(err){
+    console.error(err);
+    setBtStatus('เชื่อมต่อไม่สำเร็จ: ' + err.message + ' (ถ้าอยู่ใน Google Apps Script อาจถูกบล็อกโดย iframe permission — ลองเปิดผ่านลิงก์ deploy โดยตรง หรือ host แยกบน GitHub Pages)', 'err');
+  }
+}
+
+btBtn.addEventListener('click', async () => {
+  if(btConnected && btDevice && btDevice.gatt.connected){
+    btDevice.gatt.disconnect();
+    return;
+  }
+  await connectGanTimer();
+});
+
+// ---------- ปรับแต่งธีมระบบ ----------
+themeSelect.addEventListener('change', (e) => {
+  setTheme(e.target.value);
+});
+
+function setTheme(themeName){
+  // ล้างคลาสธีมทั้งหมด
+  document.body.className = '';
+  if(themeName !== 'space'){
+    document.body.classList.add('theme-' + themeName);
+  }
+  localStorage.setItem('rubikTimerTheme', themeName);
+  
+  // รีเฟรชกราฟด้วยเมื่อสีธีมเปลี่ยนไป
+  if(times.length >= 2){
+    updateChart();
+  }
+}
+
+// โหลดธีมและตัวอ่านเสียงที่เซฟไว้ตอนเริ่ม
+function loadUserPreferences(){
+  const savedTheme = localStorage.getItem('rubikTimerTheme') || 'space';
+  themeSelect.value = savedTheme;
+  setTheme(savedTheme);
+
+  const savedVoice = localStorage.getItem('rubikTimerVoice');
+  if(savedVoice !== null){
+    voiceToggle.checked = savedVoice === 'true';
+  } else {
+    voiceToggle.checked = true; // เปิดเป็น Default
+  }
+}
+
+voiceToggle.addEventListener('change', (e) => {
+  localStorage.setItem('rubikTimerVoice', e.target.checked);
+});
+
+// ---------- Init ----------
+loadSessions();
+populateSessionSelect();
+syncCubeTypeSelect();
+loadUserPreferences(); // โหลด Preferences ของธีมและเสียง
+renderHistory();
+renderStats();
+newScramble();
+
+// ---------- PWA ----------
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        if(!newWorker) return;
+        newWorker.addEventListener('statechange', () => {
+          if(newWorker.state === 'activated'){
+            console.log('Cube Timer: แคชออฟไลน์อัปเดตแล้ว');
+          }
+        });
+      });
+    }).catch(err => {
+      console.warn('Service worker ลงทะเบียนไม่สำเร็จ (ต้องเปิดผ่าน https หรือ localhost):', err);
+    });
+  });
+}
+
 </script>
-
-<script src="index-script.js"></script>
 </body>
 </html>
