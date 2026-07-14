@@ -1,0 +1,19 @@
+{
+  "name": "Rubik's Cube Timer — Space Edition",
+  "short_name": "Cube Timer",
+  "description": "ตัวจับเวลาลูกบาศก์รูบิค พร้อม scramble, สถิติ, session และรองรับ GAN Smart Timer",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#05050f",
+  "theme_color": "#05050f",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
