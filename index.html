@@ -307,12 +307,6 @@
     word-break:break-all;
   }
   .modal-row.excluded{opacity:.4;}
-  .modal-row.excluded .mr-top::after{
-    content:" (ตัดทิ้ง)";
-    font-weight:400;
-    font-size:11px;
-    color:var(--muted);
-  }
   .modal-row.best-time{
     border-left:3px solid var(--accent2);
     padding-left:9px;
@@ -561,18 +555,18 @@
 
 <div id="sessionBar">
   <select id="sessionSelect"></select>
-  <button id="newSessionBtn" title="สร้าง session ใหม่">+ Session</button>
-  <button id="renameSessionBtn" title="เปลี่ยนชื่อ session">แก้ชื่อ</button>
-  <button id="deleteSessionBtn" title="ลบ session นี้">ลบ</button>
+  <button id="newSessionBtn" data-i18n="btn_new_session" data-i18n-title="title_new_session" title="สร้าง session ใหม่">+ Session</button>
+  <button id="renameSessionBtn" data-i18n="btn_rename_session" data-i18n-title="title_rename_session" title="เปลี่ยนชื่อ session">แก้ชื่อ</button>
+  <button id="deleteSessionBtn" data-i18n="btn_delete_session" data-i18n-title="title_delete_session" title="ลบ session นี้">ลบ</button>
 </div>
 <div id="cubeTypeBar">
-  <label for="cubeTypeSelect">ประเภท:</label>
+  <label for="cubeTypeSelect" data-i18n="cube_type_label">ประเภท:</label>
   <select id="cubeTypeSelect">
     <option value="2x2">2x2</option>
     <option value="3x3" selected>3x3</option>
-    <option value="3x3_f2l">3x3 (ฝึก F2L)</option>
-    <option value="3x3_oll">3x3 (ฝึก OLL)</option>
-    <option value="3x3_pll">3x3 (ฝึก PLL)</option>
+    <option value="3x3_f2l" data-i18n="cube_type_f2l">3x3 (ฝึก F2L)</option>
+    <option value="3x3_oll" data-i18n="cube_type_oll">3x3 (ฝึก OLL)</option>
+    <option value="3x3_pll" data-i18n="cube_type_pll">3x3 (ฝึก PLL)</option>
     <option value="4x4">4x4</option>
     <option value="5x5">5x5</option>
     <option value="pyraminx">Pyraminx</option>
@@ -580,11 +574,11 @@
   </select>
 </div>
 
-<div id="scramble">กำลังโหลด...</div>
+<div id="scramble" data-i18n="loading_text">กำลังโหลด...</div>
 <div id="cubeNetWrap"></div>
 
 <div id="timerDisplay">0.00</div>
-<div id="hint">💻 กด <b>Space</b> ค้างไว้จนตัวเลขเปลี่ยนเป็นสีฟ้าแล้วปล่อยเพื่อเริ่ม • 📱 กดค้างที่ตัวเลขจนเปลี่ยนสีแล้วปล่อยนิ้วเพื่อเริ่ม • แตะ/กด <b>ครั้งเดียว</b> ระหว่างจับเวลาเพื่อหยุด</div>
+<div id="hint" data-i18n="hint_text">💻 กด <b>Space</b> ค้างไว้จนตัวเลขเปลี่ยนเป็นสีฟ้าแล้วปล่อยเพื่อเริ่ม • 📱 กดค้างที่ตัวเลขจนเปลี่ยนสีแล้วปล่อยนิ้วเพื่อเริ่ม • แตะ/กด <b>ครั้งเดียว</b> ระหว่างจับเวลาเพื่อหยุด</div>
 
 <div id="quickPenaltyBar">
   <button id="penaltyLastBtn" onclick="togglePenalty(0)">⚠️ +2 (เวลาล่าสุด)</button>
@@ -592,16 +586,24 @@
 </div>
 
 <div id="configBar">
+  <label>
+    🌐 <span data-i18n="lang_label">ภาษา</span>:
+    <select id="langSelect">
+      <option value="th">ไทย</option>
+      <option value="en">English</option>
+      <option value="zh">中文</option>
+    </select>
+  </label>
   <label id="inspectionToggleWrap">
     <input type="checkbox" id="inspectionToggle">
-    เวลาดูลูก 15 วิ (WCA Inspection)
+    <span data-i18n="inspection_label">เวลาดูลูก 15 วิ (WCA Inspection)</span>
   </label>
   <label>
     <input type="checkbox" id="voiceToggle" checked>
-    🔊 อ่านเวลาเสียงพูด
+    <span data-i18n="voice_label">🔊 อ่านเวลาเสียงพูด</span>
   </label>
   <label>
-    🎨 ธีม:
+    <span data-i18n="theme_label">🎨 ธีม:</span>
     <select id="themeSelect">
       <option value="space">Space Edition</option>
       <option value="amoled">AMOLED Black</option>
@@ -612,14 +614,14 @@
 </div>
 
 <div id="btSection">
-  <button id="btConnectBtn">🔗 เชื่อมต่อ Bluetooth Timer</button>
-  <div id="btStatus">ยังไม่ได้เชื่อมต่อ</div>
+  <button id="btConnectBtn" data-i18n="bt_connect_btn">🔗 เชื่อมต่อ Bluetooth Timer</button>
+  <div id="btStatus" data-i18n="bt_status_idle">ยังไม่ได้เชื่อมต่อ</div>
 </div>
 
 <div class="stats">
-  <div class="stat-box" id="statBestBox" title="แตะเพื่อดูประวัติสถิติที่ดีที่สุด"><div class="label">Best</div><div class="value" id="statBest">-</div></div>
-  <div class="stat-box" id="statAo5Box" title="แตะเพื่อดูรายละเอียด Ao5"><div class="label">Ao5</div><div class="value" id="statAo5">-</div></div>
-  <div class="stat-box" id="statAo12Box" title="แตะเพื่อดูรายละเอียด Ao12"><div class="label">Ao12</div><div class="value" id="statAo12">-</div></div>
+  <div class="stat-box" id="statBestBox" data-i18n-title="title_best" title="แตะเพื่อดูประวัติสถิติที่ดีที่สุด"><div class="label">Best</div><div class="value" id="statBest">-</div></div>
+  <div class="stat-box" id="statAo5Box" data-i18n-title="title_ao5" title="แตะเพื่อดูรายละเอียด Ao5"><div class="label">Ao5</div><div class="value" id="statAo5">-</div></div>
+  <div class="stat-box" id="statAo12Box" data-i18n-title="title_ao12" title="แตะเพื่อดูรายละเอียด Ao12"><div class="label">Ao12</div><div class="value" id="statAo12">-</div></div>
   <div class="stat-box"><div class="label">Mean</div><div class="value" id="statMean">-</div></div>
 </div>
 
@@ -629,15 +631,15 @@
 
 <div id="history">
   <h3>
-    ประวัติเวลา 
+    <span data-i18n="history_title">ประวัติเวลา</span>
     <span>
-      <button id="importBtn" class="action-btn" title="นำเข้าไฟล์สำรองข้อมูล JSON">Import JSON</button>
-      <button id="exportJsonBtn" class="action-btn" title="สำรองข้อมูล JSON ไปยังเครื่องอื่น">Export JSON</button>
-      <button id="exportBtn" class="action-btn" title="บันทึกข้อมูลออกเป็นไฟล์สเปรดชีต Excel / CSV">CSV</button> 
-      <button id="clearBtn">ล้างทั้งหมด</button>
+      <button id="importBtn" class="action-btn" data-i18n-title="title_import" title="นำเข้าไฟล์สำรองข้อมูล JSON">Import JSON</button>
+      <button id="exportJsonBtn" class="action-btn" data-i18n-title="title_export_json" title="สำรองข้อมูล JSON ไปยังเครื่องอื่น">Export JSON</button>
+      <button id="exportBtn" class="action-btn" data-i18n-title="title_export_csv" title="บันทึกข้อมูลออกเป็นไฟล์สเปรดชีต Excel / CSV">CSV</button> 
+      <button id="clearBtn" data-i18n="btn_clear_all">ล้างทั้งหมด</button>
     </span>
   </h3>
-  <div id="historyList"><div class="empty">ยังไม่มีข้อมูล</div></div>
+  <div id="historyList"><div class="empty" data-i18n="no_data_yet">ยังไม่มีข้อมูล</div></div>
 </div>
 
 <footer id="credit">by Thunder web studio ⚡️</footer>
@@ -653,6 +655,283 @@
 </div>
 
 <script>
+// ---------- ระบบภาษา (i18n): ไทย / English / 中文 ----------
+const translations = {
+  th: {
+    lang_label: "ภาษา",
+    inspection_label: "เวลาดูลูก 15 วิ (WCA Inspection)",
+    voice_label: "🔊 อ่านเวลาเสียงพูด",
+    theme_label: "🎨 ธีม:",
+    btn_new_session: "+ Session",
+    title_new_session: "สร้าง session ใหม่",
+    btn_rename_session: "แก้ชื่อ",
+    title_rename_session: "เปลี่ยนชื่อ session",
+    btn_delete_session: "ลบ",
+    title_delete_session: "ลบ session นี้",
+    cube_type_label: "ประเภท:",
+    cube_type_f2l: "3x3 (ฝึก F2L)",
+    cube_type_oll: "3x3 (ฝึก OLL)",
+    cube_type_pll: "3x3 (ฝึก PLL)",
+    loading_text: "กำลังโหลด...",
+    hint_text: "💻 กด <b>Space</b> ค้างไว้จนตัวเลขเปลี่ยนเป็นสีฟ้าแล้วปล่อยเพื่อเริ่ม • 📱 กดค้างที่ตัวเลขจนเปลี่ยนสีแล้วปล่อยนิ้วเพื่อเริ่ม • แตะ/กด <b>ครั้งเดียว</b> ระหว่างจับเวลาเพื่อหยุด",
+    penalty_last_off: "⚠️ +2 (เวลาล่าสุด)",
+    penalty_last_on: "⚠️ คืนค่าเดิม (จาก +2)",
+    dnf_last_off: "❌ DNF (เวลาล่าสุด)",
+    dnf_last_on: "❌ คืนค่าเดิม (จาก DNF)",
+    bt_connect_btn: "🔗 เชื่อมต่อ Bluetooth Timer",
+    bt_status_idle: "ยังไม่ได้เชื่อมต่อ",
+    bt_status_no_support: "เบราว์เซอร์นี้ไม่รองรับ Web Bluetooth API (แนะนำให้ใช้ Google Chrome)",
+    bt_status_scanning: "กำลังสแกนหาตัวจับเวลาไร้สาย...",
+    bt_status_disconnected: "การเชื่อมต่อหลุดจากอุปกรณ์แล้ว",
+    bt_status_connecting_server: "กำลังเชื่อมต่อเซิร์ฟเวอร์อุปกรณ์...",
+    bt_status_finding_service: "กำลังค้นหาบริการและช่องสัญญาณ...",
+    bt_status_subscribing: "สมัครสมาชิกรับข้อมูลเวลาจาก [{uuid}]...",
+    bt_status_connected: "เชื่อมต่อเรียบร้อย ({brand}) — เอามือวางบนเครื่องจับเวลาเพื่อลุยได้เลย!",
+    bt_status_failed: "เชื่อมต่อไม่สำเร็จ: {msg}",
+    bt_connected_btn: "✅ เชื่อมต่อแล้ว: {name}",
+    title_best: "แตะเพื่อดูประวัติสถิติที่ดีที่สุด",
+    title_ao5: "แตะเพื่อดูรายละเอียด Ao5",
+    title_ao12: "แตะเพื่อดูรายละเอียด Ao12",
+    history_title: "ประวัติเวลา",
+    title_import: "นำเข้าไฟล์สำรองข้อมูล JSON",
+    title_export_json: "สำรองข้อมูล JSON ไปยังเครื่องอื่น",
+    title_export_csv: "บันทึกข้อมูลออกเป็นไฟล์สเปรดชีต Excel / CSV",
+    btn_clear_all: "ล้างทั้งหมด",
+    no_data_yet: "ยังไม่มีข้อมูล",
+    no_data_session: "ยังไม่มีข้อมูลเวลาในเซสชันนี้",
+    scramble_label: "Scramble",
+    prompt_new_session: "ระบุชื่อ Session ใหม่:",
+    prompt_rename_session: "เปลี่ยนชื่อ Session เป็น:",
+    alert_min_one_session: "ไม่สามารถลบได้ ต้องเหลืออย่างน้อย 1 Session",
+    confirm_delete_session: "ยืนยันการลบ Session นี้ ข้อมูลเวลาจะหายทั้งหมด?",
+    confirm_delete_time: "ลบเวลาแถวนี้ใช่หรือไม่?",
+    confirm_clear_all: "ล้างสถิติเวลาทั้งหมดในเซสชันนี้? ไม่สามารถย้อนกลับได้!",
+    confirm_import: "พบข้อมูลระบบเซสชันสำรอง ต้องการนำเข้าข้อมูลมาทับของเดิมบนเครื่องนี้ทันทีหรือไม่?",
+    alert_import_success: "นำเข้าข้อมูลสำเร็จแล้ว!",
+    alert_import_bad_format: "โครงสร้างไฟล์ JSON ตัวช่วยสำรองไม่ถูกต้อง",
+    alert_import_read_fail: "ไม่สามารถอ่านไฟล์ได้: {msg}",
+    alert_no_export_data: "ไม่มีข้อมูลสำหรับส่งออก",
+    csv_headers: "ลำดับ,เวลาจับได้,สถานะพิเศษ,สแครมเบิล (Scramble),วันเวลาที่บันทึก",
+    csv_normal: "ปกติ",
+    modal_confirm_title: "ยืนยันการทำรายการ",
+    modal_cancel: "ยกเลิก",
+    modal_confirm: "ยืนยัน",
+    modal_best_title: "⭐ ประวัติสถิติที่ดีที่สุด",
+    modal_no_data_session: "ยังไม่มีข้อมูลเวลาในเซสชันนี้",
+    modal_no_valid_time: "ยังไม่มีเวลาที่ไม่ใช่ DNF เลยในเซสชันนี้",
+    modal_best_summary: "ประวัติการทำสถิติใหม่ในเซสชันนี้ (ดีขึ้นเรื่อยๆ ตามลำดับ) ทั้งหมด {count} ครั้ง",
+    modal_best_row: "ครั้งที่ {n} (สถิติปัจจุบัน)",
+    modal_best_row_plain: "ครั้งที่ {n}",
+    modal_aon_not_enough: "ยังทำเวลาไม่ครบ {n} ครั้งในเซสชันนี้ (ตอนนี้มี {have} ครั้ง) ต้องมีอย่างน้อย {n} ครั้งถึงจะคำนวณ Ao{n} ได้",
+    modal_aon_summary: "ผลลัพธ์ Ao{n} จาก {n} ครั้งล่าสุด: ",
+    modal_aon_dnf_note: " (มี DNF มากกว่า 1 ครั้งในชุดนี้)",
+    modal_aon_title: "Ao{n} — รายละเอียด",
+    modal_excluded_tag: " (ตัดทิ้ง)",
+    voice_dnf: "ดีเอ็นเอฟ",
+    voice_seconds: "วินาที",
+    voice_minutes: "นาที",
+    voice_lang_code: "th-TH",
+    chart_time_label: "เวลา (วินาที)",
+  },
+  en: {
+    lang_label: "Language",
+    inspection_label: "15s Inspection (WCA)",
+    voice_label: "🔊 Speak time aloud",
+    theme_label: "🎨 Theme:",
+    btn_new_session: "+ Session",
+    title_new_session: "Create a new session",
+    btn_rename_session: "Rename",
+    title_rename_session: "Rename this session",
+    btn_delete_session: "Delete",
+    title_delete_session: "Delete this session",
+    cube_type_label: "Type:",
+    cube_type_f2l: "3x3 (F2L practice)",
+    cube_type_oll: "3x3 (OLL practice)",
+    cube_type_pll: "3x3 (PLL practice)",
+    loading_text: "Loading...",
+    hint_text: "💻 Hold <b>Space</b> until it turns blue, then release to start • 📱 Hold the number until it changes color, then release to start • Tap/press <b>once</b> while running to stop",
+    penalty_last_off: "⚠️ +2 (last time)",
+    penalty_last_on: "⚠️ Undo +2",
+    dnf_last_off: "❌ DNF (last time)",
+    dnf_last_on: "❌ Undo DNF",
+    bt_connect_btn: "🔗 Connect Bluetooth Timer",
+    bt_status_idle: "Not connected",
+    bt_status_no_support: "This browser doesn't support the Web Bluetooth API (try Google Chrome)",
+    bt_status_scanning: "Scanning for wireless timer...",
+    bt_status_disconnected: "Device disconnected",
+    bt_status_connecting_server: "Connecting to device server...",
+    bt_status_finding_service: "Finding services and characteristics...",
+    bt_status_subscribing: "Subscribing to time data from [{uuid}]...",
+    bt_status_connected: "Connected ({brand}) — put your hand on the timer to get going!",
+    bt_status_failed: "Connection failed: {msg}",
+    bt_connected_btn: "✅ Connected: {name}",
+    title_best: "Tap to see your best-time history",
+    title_ao5: "Tap to see Ao5 details",
+    title_ao12: "Tap to see Ao12 details",
+    history_title: "Time History",
+    title_import: "Import a JSON backup file",
+    title_export_json: "Back up JSON to another device",
+    title_export_csv: "Save data as an Excel / CSV spreadsheet",
+    btn_clear_all: "Clear All",
+    no_data_yet: "No data yet",
+    no_data_session: "No times in this session yet",
+    scramble_label: "Scramble",
+    prompt_new_session: "Enter a name for the new session:",
+    prompt_rename_session: "Rename session to:",
+    alert_min_one_session: "Can't delete — at least 1 session must remain",
+    confirm_delete_session: "Delete this session? All its times will be lost.",
+    confirm_delete_time: "Delete this solve?",
+    confirm_clear_all: "Clear all times in this session? This can't be undone!",
+    confirm_import: "Found a session backup. Import it and overwrite the data on this device now?",
+    alert_import_success: "Data imported successfully!",
+    alert_import_bad_format: "This JSON backup file has an invalid structure",
+    alert_import_read_fail: "Couldn't read the file: {msg}",
+    alert_no_export_data: "No data to export",
+    csv_headers: "No.,Time,Penalty,Scramble,Date",
+    csv_normal: "Normal",
+    modal_confirm_title: "Confirm Action",
+    modal_cancel: "Cancel",
+    modal_confirm: "Confirm",
+    modal_best_title: "⭐ Best-Time History",
+    modal_no_data_session: "No times in this session yet",
+    modal_no_valid_time: "No non-DNF times in this session yet",
+    modal_best_summary: "New records set in this session (improving over time): {count} total",
+    modal_best_row: "Solve #{n} (current best)",
+    modal_best_row_plain: "Solve #{n}",
+    modal_aon_not_enough: "Not enough solves yet — need at least {n} in this session (you have {have}) to calculate Ao{n}",
+    modal_aon_summary: "Ao{n} result from the last {n} solves: ",
+    modal_aon_dnf_note: " (more than 1 DNF in this set)",
+    modal_aon_title: "Ao{n} — Details",
+    modal_excluded_tag: " (dropped)",
+    voice_dnf: "D N F",
+    voice_seconds: "seconds",
+    voice_minutes: "minutes",
+    voice_lang_code: "en-US",
+    chart_time_label: "Time (seconds)",
+  },
+  zh: {
+    lang_label: "语言",
+    inspection_label: "15秒观察时间 (WCA)",
+    voice_label: "🔊 语音播报时间",
+    theme_label: "🎨 主题:",
+    btn_new_session: "+ 新场次",
+    title_new_session: "创建新场次",
+    btn_rename_session: "重命名",
+    title_rename_session: "重命名此场次",
+    btn_delete_session: "删除",
+    title_delete_session: "删除此场次",
+    cube_type_label: "类型:",
+    cube_type_f2l: "3x3（F2L 练习）",
+    cube_type_oll: "3x3（OLL 练习）",
+    cube_type_pll: "3x3（PLL 练习）",
+    loading_text: "加载中...",
+    hint_text: "💻 按住 <b>空格键</b> 直到数字变蓝再松开开始 • 📱 按住数字直到变色再松开手指开始 • 计时中<b>单击一次</b>即可停止",
+    penalty_last_off: "⚠️ +2（最近一次）",
+    penalty_last_on: "⚠️ 撤销 +2",
+    dnf_last_off: "❌ DNF（最近一次）",
+    dnf_last_on: "❌ 撤销 DNF",
+    bt_connect_btn: "🔗 连接蓝牙计时器",
+    bt_status_idle: "尚未连接",
+    bt_status_no_support: "此浏览器不支持 Web Bluetooth API（建议使用 Google Chrome）",
+    bt_status_scanning: "正在搜索无线计时器...",
+    bt_status_disconnected: "设备连接已断开",
+    bt_status_connecting_server: "正在连接设备服务器...",
+    bt_status_finding_service: "正在查找服务与特征值...",
+    bt_status_subscribing: "正在订阅来自 [{uuid}] 的时间数据...",
+    bt_status_connected: "已连接（{brand}）— 把手放在计时器上即可开始！",
+    bt_status_failed: "连接失败：{msg}",
+    bt_connected_btn: "✅ 已连接：{name}",
+    title_best: "点击查看最佳成绩历史",
+    title_ao5: "点击查看 Ao5 详情",
+    title_ao12: "点击查看 Ao12 详情",
+    history_title: "计时历史",
+    title_import: "导入 JSON 备份文件",
+    title_export_json: "将 JSON 备份到其他设备",
+    title_export_csv: "导出为 Excel / CSV 表格文件",
+    btn_clear_all: "清空全部",
+    no_data_yet: "暂无数据",
+    no_data_session: "此场次还没有任何成绩",
+    scramble_label: "Scramble",
+    prompt_new_session: "请输入新场次的名称：",
+    prompt_rename_session: "将场次重命名为：",
+    alert_min_one_session: "无法删除，至少需要保留 1 个场次",
+    confirm_delete_session: "确定要删除此场次吗？所有成绩都将丢失。",
+    confirm_delete_time: "确定要删除这条成绩吗？",
+    confirm_clear_all: "清空此场次的全部成绩？此操作无法撤销！",
+    confirm_import: "发现场次备份数据，是否立即导入并覆盖本机上的数据？",
+    alert_import_success: "数据导入成功！",
+    alert_import_bad_format: "该 JSON 备份文件结构不正确",
+    alert_import_read_fail: "无法读取文件：{msg}",
+    alert_no_export_data: "没有可导出的数据",
+    csv_headers: "序号,成绩,处罚,打乱公式,记录时间",
+    csv_normal: "正常",
+    modal_confirm_title: "确认操作",
+    modal_cancel: "取消",
+    modal_confirm: "确认",
+    modal_best_title: "⭐ 最佳成绩历史",
+    modal_no_data_session: "此场次还没有任何成绩",
+    modal_no_valid_time: "此场次还没有非 DNF 的成绩",
+    modal_best_summary: "此场次的破纪录历史（逐步进步），共 {count} 次",
+    modal_best_row: "第 {n} 次（当前最佳）",
+    modal_best_row_plain: "第 {n} 次",
+    modal_aon_not_enough: "成绩还不够 {n} 次（目前有 {have} 次），至少需要 {n} 次才能计算 Ao{n}",
+    modal_aon_summary: "最近 {n} 次的 Ao{n} 结果：",
+    modal_aon_dnf_note: "（此组中 DNF 超过 1 次）",
+    modal_aon_title: "Ao{n} — 详情",
+    modal_excluded_tag: "（已剔除）",
+    voice_dnf: "DNF",
+    voice_seconds: "秒",
+    voice_minutes: "分",
+    voice_lang_code: "zh-CN",
+    chart_time_label: "时间（秒）",
+  }
+};
+
+let currentLang = localStorage.getItem('rubikTimerLang') || 'th';
+
+function t(key, vars){
+  let str = (translations[currentLang] && translations[currentLang][key] !== undefined)
+    ? translations[currentLang][key]
+    : (translations.th[key] !== undefined ? translations.th[key] : key);
+  if(vars){
+    Object.keys(vars).forEach(k => {
+      str = str.split('{' + k + '}').join(vars[k]);
+    });
+  }
+  return str;
+}
+
+function applyLanguage(lang){
+  currentLang = lang;
+  localStorage.setItem('rubikTimerLang', lang);
+  document.documentElement.lang = (lang === 'th' ? 'th' : (lang === 'zh' ? 'zh-CN' : 'en'));
+
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.innerHTML = t(el.getAttribute('data-i18n'));
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    el.title = t(el.getAttribute('data-i18n-title'));
+  });
+
+  const langSelectEl = document.getElementById('langSelect');
+  if(langSelectEl) langSelectEl.value = lang;
+
+  // รีเฟรชส่วนที่ประกอบข้อความด้วย JS ให้เป็นภาษาที่เลือกด้วย
+  if(typeof renderHistory === 'function') renderHistory();
+  const btBtnEl = document.getElementById('btConnectBtn');
+  if(btBtnEl && typeof btDevice !== 'undefined' && !btDevice){
+    btBtnEl.textContent = t('bt_connect_btn');
+  }
+  const btStatusEl = document.getElementById('btStatus');
+  if(btStatusEl && typeof btDevice !== 'undefined' && !btDevice){
+    btStatusEl.textContent = t('bt_status_idle');
+  }
+}
+
+document.getElementById('langSelect').addEventListener('change', (e) => {
+  applyLanguage(e.target.value);
+});
+
 // ---------- Scramble generator ----------
 const FACES = ['U','D','L','R','F','B'];
 const MODS = ['', "'", '2'];
@@ -1135,11 +1414,11 @@ function handleTimerDataNotification(event){
 
 async function connectSmartTimer(){
   if(!navigator.bluetooth){
-    setBtStatus('เบราว์เซอร์นี้ไม่รองรับ Web Bluetooth API (แนะนำให้ใช้ Google Chrome)', 'err');
+    setBtStatus(t('bt_status_no_support'), 'err');
     return;
   }
   try{
-    setBtStatus('กำลังสแกนหาตัวจับเวลาไร้สาย...');
+    setBtStatus(t('bt_status_scanning'));
     
     btDevice = await navigator.bluetooth.requestDevice({
       filters: [
@@ -1160,15 +1439,15 @@ async function connectSmartTimer(){
       btConnected = false;
       connectedBrand = null;
       lastParsedState = null;
-      btBtn.textContent = '🔗 เชื่อมต่อ Bluetooth Timer';
+      btBtn.textContent = t('bt_connect_btn');
       btBtn.classList.remove('connected');
-      setBtStatus('การเชื่อมต่อหลุดจากอุปกรณ์แล้ว');
+      setBtStatus(t('bt_status_disconnected'));
     });
 
-    setBtStatus('กำลังเชื่อมต่อเซิร์ฟเวอร์อุปกรณ์...');
+    setBtStatus(t('bt_status_connecting_server'));
     btServer = await btDevice.gatt.connect();
 
-    setBtStatus('กำลังค้นหาบริการและช่องสัญญาณ...');
+    setBtStatus(t('bt_status_finding_service'));
     
     let targetService = null;
     let targetChar = null;
@@ -1219,19 +1498,19 @@ async function connectSmartTimer(){
       throw new Error('ไม่พบช่องสัญญาณรับส่งข้อมูลเวลาอัตโนมัติ (Notify Characteristic)');
     }
 
-    setBtStatus(`สมัครสมาชิกรับข้อมูลเวลาจาก [${targetChar.uuid.slice(0,8)}]...`);
+    setBtStatus(t('bt_status_subscribing', { uuid: targetChar.uuid.slice(0,8) }));
     
     await targetChar.startNotifications();
     targetChar.addEventListener('characteristicvaluechanged', handleTimerDataNotification);
 
     btConnected = true;
-    btBtn.textContent = `✅ เชื่อมต่อแล้ว: ${btDevice.name || 'QY Smart Timer V2'}`;
+    btBtn.textContent = t('bt_connected_btn', { name: btDevice.name || 'QY Smart Timer V2' });
     btBtn.classList.add('connected');
-    setBtStatus(`เชื่อมต่อเรียบร้อย (${connectedBrand}) — เอามือวางบนเครื่องจับเวลาเพื่อลุยได้เลย!`, 'ok');
+    setBtStatus(t('bt_status_connected', { brand: connectedBrand }), 'ok');
 
   }catch(err){
     console.error(err);
-    setBtStatus('เชื่อมต่อไม่สำเร็จ: ' + err.message, 'err');
+    setBtStatus(t('bt_status_failed', { msg: err.message }), 'err');
   }
 }
 
@@ -1324,7 +1603,7 @@ cubeTypeSelect.addEventListener('change', (e) => {
 });
 
 document.getElementById('newSessionBtn').addEventListener('click', () => {
-  const name = prompt("ระบุชื่อ Session ใหม่:");
+  const name = prompt(t('prompt_new_session'));
   if(!name) return;
   const id = "session_" + Date.now();
   sessionsData.sessions[id] = {
@@ -1343,7 +1622,7 @@ document.getElementById('newSessionBtn').addEventListener('click', () => {
 document.getElementById('renameSessionBtn').addEventListener('click', () => {
   const curSess = sessionsData.sessions[sessionsData.currentId];
   if(!curSess) return;
-  const newName = prompt("เปลี่ยนชื่อ Session เป็น:", curSess.name);
+  const newName = prompt(t('prompt_rename_session'), curSess.name);
   if(!newName) return;
   curSess.name = newName;
   saveSessionsToStorage();
@@ -1353,10 +1632,10 @@ document.getElementById('renameSessionBtn').addEventListener('click', () => {
 document.getElementById('deleteSessionBtn').addEventListener('click', () => {
   const keys = Object.keys(sessionsData.sessions);
   if(keys.length <= 1){
-    alert("ไม่สามารถลบได้ ต้องเหลืออย่างน้อย 1 Session");
+    alert(t('alert_min_one_session'));
     return;
   }
-  openConfirm("ยืนยันการลบ Session นี้ ข้อมูลเวลาจะหายทั้งหมด?", () => {
+  openConfirm(t('confirm_delete_session'), () => {
     delete sessionsData.sessions[sessionsData.currentId];
     sessionsData.currentId = Object.keys(sessionsData.sessions)[0];
     saveSessionsToStorage();
@@ -1411,20 +1690,20 @@ function speakTime(ms, isDnf, penalty) {
   window.speechSynthesis.cancel(); 
   let text = '';
   if (isDnf) {
-    text = 'ดีเอ็นเอฟ';
+    text = t('voice_dnf');
   } else {
     let finalMs = ms;
     const totalSec = finalMs / 1000;
     if (totalSec < 60) {
-      text = totalSec.toFixed(2) + ' วินาที';
+      text = totalSec.toFixed(2) + ' ' + t('voice_seconds');
     } else {
       const m = Math.floor(totalSec / 60);
       const s = (totalSec % 60).toFixed(2);
-      text = `${m} นาที ${s} วินาที`;
+      text = `${m} ${t('voice_minutes')} ${s} ${t('voice_seconds')}`;
     }
   }
   const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = 'th-TH';
+  utterance.lang = t('voice_lang_code');
   utterance.rate = 1.2; 
   window.speechSynthesis.speak(utterance);
 }
@@ -1653,7 +1932,7 @@ const dnfLastBtn = document.getElementById('dnfLastBtn');
 function renderHistory(){
   const curSess = sessionsData.sessions[sessionsData.currentId];
   if(!curSess || curSess.times.length === 0){
-    historyList.innerHTML = '<div class="empty">ยังไม่มีข้อมูลเวลาในเซสชันนี้</div>';
+    historyList.innerHTML = `<div class="empty">${t('no_data_session')}</div>`;
     penaltyLastBtn.disabled = true;
     dnfLastBtn.disabled = true;
     return;
@@ -1664,21 +1943,21 @@ function renderHistory(){
   
   const lastTime = curSess.times[0];
   if(lastTime.penalty === 2){
-    penaltyLastBtn.textContent = '⚠️ คืนค่าเดิม (จาก +2)';
+    penaltyLastBtn.textContent = t('penalty_last_on');
     penaltyLastBtn.style.background = 'var(--accent2)';
     penaltyLastBtn.style.color = '#111';
   } else {
-    penaltyLastBtn.textContent = '⚠️ +2 (เวลาล่าสุด)';
+    penaltyLastBtn.textContent = t('penalty_last_off');
     penaltyLastBtn.style.background = 'var(--panel)';
     penaltyLastBtn.style.color = 'var(--text)';
   }
   
   if(lastTime.dnf){
-    dnfLastBtn.textContent = '❌ คืนค่าเดิม (จาก DNF)';
+    dnfLastBtn.textContent = t('dnf_last_on');
     dnfLastBtn.style.background = 'var(--danger)';
     dnfLastBtn.style.color = '#111';
   } else {
-    dnfLastBtn.textContent = '❌ DNF (เวลาล่าสุด)';
+    dnfLastBtn.textContent = t('dnf_last_off');
     dnfLastBtn.style.background = 'var(--panel)';
     dnfLastBtn.style.color = 'var(--text)';
   }
@@ -1689,13 +1968,13 @@ function renderHistory(){
   });
 
   historyList.innerHTML = '';
-  curSess.times.forEach((t, index) => {
+  curSess.times.forEach((rec, index) => {
     const displayIdx = curSess.times.length - index;
-    const isBest = (!t.dnf && t.ms === bestMs);
+    const isBest = (!rec.dnf && rec.ms === bestMs);
     
-    let timeText = formatTime(t.ms);
-    if(t.dnf) timeText = 'DNF';
-    else if(t.penalty === 2) timeText += ' (+2)';
+    let timeText = formatTime(rec.ms);
+    if(rec.dnf) timeText = 'DNF';
+    else if(rec.penalty === 2) timeText += ' (+2)';
 
     const row = document.createElement('div');
     row.className = 'time-row' + (isBest ? ' best-time' : '');
@@ -1708,12 +1987,12 @@ function renderHistory(){
           <span class="val">${timeText}</span>
         </div>
         <div class="row-actions">
-          <span class="pen-btn ${t.penalty===2?'active':''}" onclick="event.stopPropagation(); togglePenalty(${index})">+2</span>
-          <span class="dnf-btn ${t.dnf?'active':''}" onclick="event.stopPropagation(); toggleDnf(${index})">DNF</span>
+          <span class="pen-btn ${rec.penalty===2?'active':''}" onclick="event.stopPropagation(); togglePenalty(${index})">+2</span>
+          <span class="dnf-btn ${rec.dnf?'active':''}" onclick="event.stopPropagation(); toggleDnf(${index})">DNF</span>
           <span class="del" onclick="event.stopPropagation(); deleteTime(${index})">🗑️</span>
         </div>
       </div>
-      <div class="row-scramble">🧩 Scramble: ${t.scramble || '-'} (${t.date || ''})</div>
+      <div class="row-scramble">🧩 ${t('scramble_label')}: ${rec.scramble || '-'} (${rec.date || ''})</div>
     `;
     
     row.addEventListener('click', () => {
@@ -1727,7 +2006,7 @@ function renderHistory(){
 function deleteTime(index){
   const curSess = sessionsData.sessions[sessionsData.currentId];
   if(!curSess) return;
-  openConfirm("ลบเวลาแถวนี้ใช่หรือไม่?", () => {
+  openConfirm(t('confirm_delete_time'), () => {
     curSess.times.splice(index, 1);
     saveSessionsToStorage();
     renderHistory();
@@ -1775,7 +2054,7 @@ function toggleDnf(index){
 document.getElementById('clearBtn').addEventListener('click', () => {
   const curSess = sessionsData.sessions[sessionsData.currentId];
   if(!curSess || curSess.times.length === 0) return;
-  openConfirm("ล้างสถิติเวลาทั้งหมดในเซสชันนี้? ไม่สามารถย้อนกลับได้!", () => {
+  openConfirm(t('confirm_clear_all'), () => {
     curSess.times = [];
     saveSessionsToStorage();
     renderHistory();
@@ -1879,12 +2158,12 @@ statModalOverlay.addEventListener('click', (e) => {
 
 // กล่องยืนยัน (แทน window.confirm ซึ่งบางเบราว์เซอร์ในแอป/มือถือบล็อกเงียบๆ ทำให้ปุ่มดูเหมือนกดไม่ได้)
 function openConfirm(message, onConfirm){
-  modalTitle.textContent = 'ยืนยันการทำรายการ';
+  modalTitle.textContent = t('modal_confirm_title');
   modalBody.innerHTML = `
     <div class="modal-summary" style="margin-bottom:18px; font-size:14px;">${escapeHtml(message)}</div>
     <div style="display:flex; gap:10px; justify-content:flex-end;">
-      <button id="modalCancelBtn" class="action-btn">ยกเลิก</button>
-      <button id="modalConfirmBtn" class="action-btn" style="border-color:var(--danger); color:var(--danger);">ยืนยัน</button>
+      <button id="modalCancelBtn" class="action-btn">${t('modal_cancel')}</button>
+      <button id="modalConfirmBtn" class="action-btn" style="border-color:var(--danger); color:var(--danger);">${t('modal_confirm')}</button>
     </div>
   `;
   statModalOverlay.classList.add('show');
@@ -1899,44 +2178,45 @@ function showBestHistoryModal(){
   const curSess = sessionsData.sessions[sessionsData.currentId];
   const times = curSess ? curSess.times : [];
   if(!times || times.length === 0){
-    openModal('⭐ สถิติที่ดีที่สุด', `<div class="modal-empty">ยังไม่มีข้อมูลเวลาในเซสชันนี้</div>`);
+    openModal(t('modal_best_title'), `<div class="modal-empty">${t('modal_no_data_session')}</div>`);
     return;
   }
   // เรียงจากครั้งเก่าสุด -> ใหม่สุด เพื่อไล่หาสถิติที่ดีขึ้นเรื่อยๆ ในแต่ละช่วง
   const chronological = times.slice().reverse();
   let runningBest = Infinity;
   const records = [];
-  chronological.forEach((t, i) => {
-    if(t.dnf) return;
-    if(t.ms < runningBest){
-      runningBest = t.ms;
-      records.push({ ...t, orderIndex: i + 1 });
+  chronological.forEach((rec, i) => {
+    if(rec.dnf) return;
+    if(rec.ms < runningBest){
+      runningBest = rec.ms;
+      records.push({ ...rec, orderIndex: i + 1 });
     }
   });
   if(records.length === 0){
-    openModal('⭐ สถิติที่ดีที่สุด', `<div class="modal-empty">ยังไม่มีเวลาที่ไม่ใช่ DNF เลยในเซสชันนี้</div>`);
+    openModal(t('modal_best_title'), `<div class="modal-empty">${t('modal_no_valid_time')}</div>`);
     return;
   }
   records.reverse(); // โชว์สถิติล่าสุดก่อน
-  let html = `<div class="modal-summary">ประวัติการทำสถิติใหม่ในเซสชันนี้ (ดีขึ้นเรื่อยๆ ตามลำดับ) ทั้งหมด ${records.length} ครั้ง</div>`;
+  let html = `<div class="modal-summary">${t('modal_best_summary', { count: records.length })}</div>`;
   records.forEach((r, idx) => {
+    const rowLabel = idx === 0 ? t('modal_best_row', { n: r.orderIndex }) : t('modal_best_row_plain', { n: r.orderIndex });
     html += `<div class="modal-row ${idx === 0 ? 'best-time' : ''}">
-      <div class="mr-top"><span>${idx === 0 ? '⭐ ' : ''}ครั้งที่ ${r.orderIndex}${idx === 0 ? ' (สถิติปัจจุบัน)' : ''} • ${escapeHtml(r.date || '')}</span><span>${formatTime(r.ms)}</span></div>
+      <div class="mr-top"><span>${idx === 0 ? '⭐ ' : ''}${rowLabel} • ${escapeHtml(r.date || '')}</span><span>${formatTime(r.ms)}</span></div>
       <div class="mr-scramble">${escapeHtml(r.scramble || '-')}</div>
     </div>`;
   });
-  openModal('⭐ ประวัติสถิติที่ดีที่สุด', html);
+  openModal(t('modal_best_title'), html);
 }
 
 function getAoNBreakdown(times, n){
   const lastN = times.slice(0, n); // ล่าสุด n ครั้ง (ใหม่สุดอยู่หน้า)
   const chronological = lastN.slice().reverse(); // เรียงเป็นลำดับที่จับเวลาจริง
-  const dnfCount = lastN.filter(t => t.dnf).length;
+  const dnfCount = lastN.filter(rec => rec.dnf).length;
   let excludeBestId = null, excludeWorstId = null;
   const result = calcAoN(times, n);
 
   if(dnfCount <= 1){
-    const validSorted = lastN.filter(t => !t.dnf).slice().sort((a, b) => a.ms - b.ms);
+    const validSorted = lastN.filter(rec => !rec.dnf).slice().sort((a, b) => a.ms - b.ms);
     if(validSorted.length > 0) excludeBestId = validSorted[0].id;
     if(dnfCount === 0 && validSorted.length > 1){
       excludeWorstId = validSorted[validSorted.length - 1].id;
@@ -1949,20 +2229,20 @@ function showAoNModal(n){
   const curSess = sessionsData.sessions[sessionsData.currentId];
   const times = curSess ? curSess.times : [];
   if(!times || times.length < n){
-    openModal(`Ao${n}`, `<div class="modal-empty">ยังทำเวลาไม่ครบ ${n} ครั้งในเซสชันนี้ (ตอนนี้มี ${times ? times.length : 0} ครั้ง) ต้องมีอย่างน้อย ${n} ครั้งถึงจะคำนวณ Ao${n} ได้</div>`);
+    openModal(`Ao${n}`, `<div class="modal-empty">${t('modal_aon_not_enough', { n, have: times ? times.length : 0 })}</div>`);
     return;
   }
   const data = getAoNBreakdown(times, n);
-  let html = `<div class="modal-summary">ผลลัพธ์ Ao${n} จาก ${n} ครั้งล่าสุด: <b style="color:var(--text)">${data.result}</b>${data.dnfCount > 1 ? ' (มี DNF มากกว่า 1 ครั้งในชุดนี้)' : ''}</div>`;
-  data.chronological.forEach((t, i) => {
-    const excluded = (t.id === data.excludeBestId) || (t.id === data.excludeWorstId) || (t.dnf && data.dnfCount <= 1);
-    const timeLabel = t.dnf ? 'DNF' : formatTime(t.ms) + (t.penalty === 2 ? ' (+2)' : '');
+  let html = `<div class="modal-summary">${t('modal_aon_summary', { n })}<b style="color:var(--text)">${data.result}</b>${data.dnfCount > 1 ? t('modal_aon_dnf_note') : ''}</div>`;
+  data.chronological.forEach((rec, i) => {
+    const excluded = (rec.id === data.excludeBestId) || (rec.id === data.excludeWorstId) || (rec.dnf && data.dnfCount <= 1);
+    const timeLabel = (rec.dnf ? 'DNF' : formatTime(rec.ms) + (rec.penalty === 2 ? ' (+2)' : '')) + (excluded ? t('modal_excluded_tag') : '');
     html += `<div class="modal-row ${excluded ? 'excluded' : ''}">
-      <div class="mr-top"><span>#${i + 1} • ${escapeHtml(t.date || '')}</span><span>${timeLabel}</span></div>
-      <div class="mr-scramble">${escapeHtml(t.scramble || '-')}</div>
+      <div class="mr-top"><span>#${i + 1} • ${escapeHtml(rec.date || '')}</span><span>${timeLabel}</span></div>
+      <div class="mr-scramble">${escapeHtml(rec.scramble || '-')}</div>
     </div>`;
   });
-  openModal(`Ao${n} — รายละเอียด`, html);
+  openModal(t('modal_aon_title', { n }), html);
 }
 
 document.getElementById('statBestBox').addEventListener('click', showBestHistoryModal);
@@ -1997,7 +2277,7 @@ function updateChart(){
       data: {
         labels: labels,
         datasets: [{
-          label: 'เวลา (วินาที)',
+          label: t('chart_time_label'),
           data: dataVals,
           borderColor: '#00e5ff',
           backgroundColor: 'rgba(0, 229, 255, 0.15)',
@@ -2025,18 +2305,18 @@ function updateChart(){
 document.getElementById('exportBtn').addEventListener('click', () => {
   const curSess = sessionsData.sessions[sessionsData.currentId];
   if(!curSess || curSess.times.length === 0){
-    alert("ไม่มีข้อมูลสำหรับส่งออก");
+    alert(t('alert_no_export_data'));
     return;
   }
-  let csv = "ลำดับ,เวลาจับได้,สถานะพิเศษ,สแครมเบิล (Scramble),วันเวลาที่บันทึก\n";
-  curSess.times.forEach((t, i) => {
+  let csv = t('csv_headers') + "\n";
+  curSess.times.forEach((rec, i) => {
     const idx = curSess.times.length - i;
-    let note = "ปกติ";
-    if(t.dnf) note = "DNF";
-    else if(t.penalty === 2) note = "+2 Penalty";
+    let note = t('csv_normal');
+    if(rec.dnf) note = "DNF";
+    else if(rec.penalty === 2) note = "+2 Penalty";
     
-    let rawSec = t.dnf ? "DNF" : (t.ms/1000).toFixed(2);
-    csv += `${idx},${rawSec},${note},"${t.scramble || ''}",${t.date || ''}\n`;
+    let rawSec = rec.dnf ? "DNF" : (rec.ms/1000).toFixed(2);
+    csv += `${idx},${rawSec},${note},"${rec.scramble || ''}",${rec.date || ''}\n`;
   });
   
   const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: 'text/csv;charset=utf-8;' });
@@ -2069,7 +2349,7 @@ document.getElementById('importBtn').addEventListener('click', () => {
       try{
         const parsed = JSON.parse(evt.target.result);
         if(parsed.sessions && parsed.currentId){
-          openConfirm("พบข้อมูลระบบเซสชันสำรอง ต้องการนำเข้าข้อมูลมาทับของเดิมบนเครื่องนี้ทันทีหรือไม่?", () => {
+          openConfirm(t('confirm_import'), () => {
             sessionsData = parsed;
             saveSessionsToStorage();
             populateSessionSelect();
@@ -2077,13 +2357,13 @@ document.getElementById('importBtn').addEventListener('click', () => {
             newScramble();
             renderHistory();
             renderStats();
-            alert("นำเข้าข้อมูลสำเร็จแล้ว!");
+            alert(t('alert_import_success'));
           });
         } else {
-          alert("โครงสร้างไฟล์ JSON ตัวช่วยสำรองไม่ถูกต้อง");
+          alert(t('alert_import_bad_format'));
         }
       }catch(err){
-        alert("ไม่สามารถอ่านไฟล์ได้: " + err.message);
+        alert(t('alert_import_read_fail', { msg: err.message }));
       }
     };
     reader.readAsText(file);
@@ -2131,6 +2411,7 @@ document.getElementById('voiceToggle').addEventListener('change', (e) => {
 
 
 // ---------- Init Run Block ----------
+applyLanguage(currentLang);
 loadSessions();
 populateSessionSelect();
 syncCubeTypeSelect();
