@@ -547,6 +547,152 @@
     margin-right:6px;
     filter:drop-shadow(0 0 4px rgba(255,200,87,0.6));
   }
+
+  /* ---------- Competition Mode (Ao5) ---------- */
+  #competitionEntry{
+    margin: 4px 0 18px;
+    text-align:center;
+  }
+  #competitionBtn{
+    background:linear-gradient(135deg, rgba(255,200,87,0.18), rgba(0,229,255,0.12));
+    border:1px solid var(--accent2);
+    color:var(--text);
+    padding:10px 20px;
+    border-radius:10px;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    letter-spacing:0.5px;
+    box-shadow:0 0 16px rgba(255,200,87,0.15);
+  }
+  #competitionBtn:hover{
+    box-shadow:0 0 22px rgba(255,200,87,0.4);
+    transform:translateY(-1px);
+  }
+
+  body.competition-mode{
+    justify-content:center;
+    padding-top:70px;
+  }
+  body.competition-mode > *{ display:none !important; }
+  body.competition-mode #scramble,
+  body.competition-mode #timerDisplay,
+  body.competition-mode #hint{ display:block !important; }
+  body.competition-mode #cubeNetWrap{ display:flex !important; justify-content:center; }
+  body.competition-mode #competitionHud{ display:flex !important; }
+  body.competition-mode #competitionSummaryOverlay.show{ display:flex !important; }
+
+  #competitionHud{
+    position:fixed;
+    top:0; left:0; right:0;
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+    padding:14px 16px 10px;
+    background:linear-gradient(180deg, rgba(5,5,15,0.85), transparent);
+    z-index:150;
+  }
+  #compExitBtn{
+    position:absolute;
+    top:10px;
+    right:16px;
+    background:transparent;
+    border:1px solid var(--danger);
+    color:var(--danger);
+    width:34px;
+    height:34px;
+    border-radius:50%;
+    font-size:16px;
+    cursor:pointer;
+  }
+  #compExitBtn:hover{ background:var(--danger); color:#111; }
+  #compProgress{
+    font-size:14px;
+    color:var(--muted);
+    letter-spacing:0.5px;
+  }
+  #compDots{
+    display:flex;
+    gap:8px;
+  }
+  .comp-dot{
+    width:12px; height:12px;
+    border-radius:50%;
+    background:rgba(167,139,250,0.25);
+    border:1px solid rgba(167,139,250,0.4);
+    transition:all .2s;
+  }
+  .comp-dot.done{ background:var(--accent); border-color:var(--accent); box-shadow:0 0 8px rgba(0,229,255,0.6); }
+  .comp-dot.dnf{ background:var(--danger); border-color:var(--danger); box-shadow:0 0 8px rgba(255,95,143,0.6); }
+  .comp-dot.penalty{ background:var(--accent2); border-color:var(--accent2); box-shadow:0 0 8px rgba(255,200,87,0.6); }
+  .comp-dot.current{ transform:scale(1.3); border-color:var(--text); }
+
+  #competitionSummaryOverlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.75);
+    backdrop-filter:blur(4px);
+    align-items:center;
+    justify-content:center;
+    z-index:200;
+    padding:20px;
+  }
+  .comp-summary-box{
+    background:var(--panel-solid);
+    border:1px solid rgba(255,200,87,0.4);
+    border-radius:16px;
+    max-width:480px;
+    width:100%;
+    max-height:85vh;
+    overflow-y:auto;
+    padding:22px 22px 18px;
+    box-shadow:0 0 60px rgba(0,0,0,0.7);
+    text-align:center;
+  }
+  .comp-summary-box h2{
+    margin:0 0 6px;
+    font-size:19px;
+    color:var(--accent2);
+    text-shadow:0 0 14px rgba(255,200,87,0.5);
+  }
+  .comp-summary-result{
+    font-size:32px;
+    font-weight:700;
+    font-variant-numeric:tabular-nums;
+    margin:8px 0 18px;
+    color:var(--accent);
+  }
+  .comp-summary-list{
+    text-align:left;
+    margin-bottom:18px;
+  }
+  .comp-summary-actions{
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    flex-wrap:wrap;
+  }
+  .comp-summary-actions button{
+    background:var(--panel);
+    border:1px solid rgba(167,139,250,0.4);
+    color:var(--text);
+    padding:10px 18px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:13px;
+  }
+  #compNewBtn{ border-color:var(--accent2); }
+  #compNewBtn:hover{ box-shadow:0 0 14px rgba(255,200,87,0.4); }
+  #compExitBtn2:hover{ box-shadow:0 0 14px rgba(255,95,143,0.4); border-color:var(--danger); color:var(--danger); }
+  #compFullscreenNote{
+    font-size:11px;
+    color:var(--muted);
+    margin-top:6px;
+    text-align:center;
+    max-width:300px;
+  }
 </style>
 </head>
 <body>
@@ -572,6 +718,10 @@
     <option value="pyraminx">Pyraminx</option>
     <option value="skewb">Skewb</option>
   </select>
+</div>
+
+<div id="competitionEntry">
+  <button id="competitionBtn" data-i18n="competition_btn" data-i18n-title="title_competition_btn" title="สุ่ม scramble 5 อันล่วงหน้า แล้วจับเวลาแบบเต็มจอทีละอันเหมือนแข่งจริง">🏆 โหมดแข่งขัน Ao5</button>
 </div>
 
 <div id="scramble" data-i18n="loading_text">กำลังโหลด...</div>
@@ -623,6 +773,8 @@
   <div class="stat-box" id="statAo5Box" data-i18n-title="title_ao5" title="แตะเพื่อดูรายละเอียด Ao5"><div class="label">Ao5</div><div class="value" id="statAo5">-</div></div>
   <div class="stat-box" id="statAo12Box" data-i18n-title="title_ao12" title="แตะเพื่อดูรายละเอียด Ao12"><div class="label">Ao12</div><div class="value" id="statAo12">-</div></div>
   <div class="stat-box"><div class="label">Mean</div><div class="value" id="statMean">-</div></div>
+  <div class="stat-box" id="statAo50Box" title="Ao50"><div class="label">Ao50</div><div class="value" id="statAo50">-</div></div>
+  <div class="stat-box" id="statAo100Box" title="Ao100"><div class="label">Ao100</div><div class="value" id="statAo100">-</div></div>
 </div>
 
 <div id="chartContainer">
@@ -651,6 +803,25 @@
       <button id="modalCloseBtn">✕</button>
     </div>
     <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<div id="competitionHud">
+  <button id="compExitBtn" data-i18n-title="title_comp_exit" title="ออกจากโหมดแข่งขัน">✕</button>
+  <div id="compProgress"></div>
+  <div id="compDots"></div>
+  <div id="compFullscreenNote" data-i18n="comp_fullscreen_denied" style="display:none;"></div>
+</div>
+
+<div id="competitionSummaryOverlay">
+  <div class="comp-summary-box">
+    <h2 data-i18n="comp_summary_title">🏆 สรุปผล Ao5</h2>
+    <div class="comp-summary-result" id="compSummaryResult"></div>
+    <div class="comp-summary-list" id="compSummaryList"></div>
+    <div class="comp-summary-actions">
+      <button id="compNewBtn" data-i18n="comp_new_btn">🔄 แข่งใหม่ (Ao5 ใหม่)</button>
+      <button id="compExitBtn2" data-i18n="comp_exit_btn">ออกจากโหมด</button>
+    </div>
   </div>
 </div>
 
@@ -732,6 +903,17 @@ const translations = {
     voice_minutes: "นาที",
     voice_lang_code: "th-TH",
     chart_time_label: "เวลา (วินาที)",
+    competition_btn: "🏆 โหมดแข่งขัน Ao5",
+    title_competition_btn: "สุ่ม scramble 5 อันล่วงหน้า แล้วจับเวลาแบบเต็มจอทีละอันเหมือนแข่งจริง",
+    title_comp_exit: "ออกจากโหมดแข่งขัน",
+    title_aon_generic: "แตะเพื่อดูรายละเอียด Ao{n}",
+    comp_progress: "รอบที่ {cur} / {total}",
+    comp_fullscreen_denied: "⚠️ เบราว์เซอร์นี้ไม่รองรับโหมดเต็มจอ แต่ยังคงลดสิ่งรบกวนให้อยู่",
+    comp_summary_title: "🏆 สรุปผล Ao5",
+    comp_result_label: "ผลลัพธ์ Ao5: ",
+    comp_solve_row: "รอบที่ {n}",
+    comp_new_btn: "🔄 แข่งใหม่ (Ao5 ใหม่)",
+    comp_exit_btn: "ออกจากโหมด",
   },
   en: {
     lang_label: "Language",
@@ -808,6 +990,17 @@ const translations = {
     voice_minutes: "minutes",
     voice_lang_code: "en-US",
     chart_time_label: "Time (seconds)",
+    competition_btn: "🏆 Ao5 Competition Mode",
+    title_competition_btn: "Pre-generates 5 scrambles, then times each one fullscreen, distraction-free — just like a real competition",
+    title_comp_exit: "Exit competition mode",
+    title_aon_generic: "Tap to see Ao{n} details",
+    comp_progress: "Solve {cur} / {total}",
+    comp_fullscreen_denied: "⚠️ This browser doesn't support fullscreen mode, but distractions are still hidden",
+    comp_summary_title: "🏆 Ao5 Summary",
+    comp_result_label: "Ao5 result: ",
+    comp_solve_row: "Solve #{n}",
+    comp_new_btn: "🔄 New Ao5",
+    comp_exit_btn: "Exit",
   },
   zh: {
     lang_label: "语言",
@@ -884,6 +1077,17 @@ const translations = {
     voice_minutes: "分",
     voice_lang_code: "zh-CN",
     chart_time_label: "时间（秒）",
+    competition_btn: "🏆 Ao5 竞赛模式",
+    title_competition_btn: "预先生成 5 个打乱公式，然后全屏依次计时，专注无干扰，如同真实比赛",
+    title_comp_exit: "退出竞赛模式",
+    title_aon_generic: "点击查看 Ao{n} 详情",
+    comp_progress: "第 {cur} / {total} 次",
+    comp_fullscreen_denied: "⚠️ 此浏览器不支持全屏模式，但仍会隐藏干扰内容",
+    comp_summary_title: "🏆 Ao5 结果汇总",
+    comp_result_label: "Ao5 成绩：",
+    comp_solve_row: "第 {n} 次",
+    comp_new_btn: "🔄 开始新的 Ao5",
+    comp_exit_btn: "退出",
   }
 };
 
@@ -925,6 +1129,15 @@ function applyLanguage(lang){
   const btStatusEl = document.getElementById('btStatus');
   if(btStatusEl && typeof btDevice !== 'undefined' && !btDevice){
     btStatusEl.textContent = t('bt_status_idle');
+  }
+
+  const ao50BoxEl = document.getElementById('statAo50Box');
+  if(ao50BoxEl) ao50BoxEl.title = t('title_aon_generic', { n: 50 });
+  const ao100BoxEl = document.getElementById('statAo100Box');
+  if(ao100BoxEl) ao100BoxEl.title = t('title_aon_generic', { n: 100 });
+
+  if(typeof competitionMode !== 'undefined' && competitionMode){
+    updateCompetitionHud();
   }
 }
 
@@ -1825,7 +2038,11 @@ function releaseHold(){
       display.className = 'inspect-danger';
       display.textContent = 'DNF';
       saveTime(0, true, 0);
-      newScramble();
+      if(typeof competitionMode !== 'undefined' && competitionMode){
+        recordCompetitionSolve(0, true, 0);
+      } else {
+        newScramble();
+      }
       return;
     }
     display.className = 'go';
@@ -1855,7 +2072,11 @@ function stopTimer(){
   display.classList.remove('go');
   if (isDnf) display.textContent = 'DNF';
   else display.textContent = formatTime(finalMs) + (pendingPenalty === 2 ? ' (+2)' : '');
-  newScramble();
+  if(typeof competitionMode !== 'undefined' && competitionMode){
+    recordCompetitionSolve(finalMs, isDnf, pendingPenalty === 2 ? 2 : 0);
+  } else {
+    newScramble();
+  }
 }
 
 function handlePressStart(){
@@ -2097,12 +2318,16 @@ function renderStats(){
   const ao5Box = document.getElementById('statAo5');
   const ao12Box = document.getElementById('statAo12');
   const meanBox = document.getElementById('statMean');
+  const ao50Box = document.getElementById('statAo50');
+  const ao100Box = document.getElementById('statAo100');
   
   if(!curSess || curSess.times.length === 0){
     bestBox.textContent = '-';
     ao5Box.textContent = '-';
     ao12Box.textContent = '-';
     meanBox.textContent = '-';
+    ao50Box.textContent = '-';
+    ao100Box.textContent = '-';
     document.getElementById('chartContainer').style.display = 'none';
     return;
   }
@@ -2115,6 +2340,8 @@ function renderStats(){
   
   ao5Box.textContent = calcAoN(times, 5);
   ao12Box.textContent = calcAoN(times, 12);
+  ao50Box.textContent = calcAoN(times, 50);
+  ao100Box.textContent = calcAoN(times, 100);
   
   let validCount = 0;
   let totalSum = 0;
@@ -2248,6 +2475,191 @@ function showAoNModal(n){
 document.getElementById('statBestBox').addEventListener('click', showBestHistoryModal);
 document.getElementById('statAo5Box').addEventListener('click', () => showAoNModal(5));
 document.getElementById('statAo12Box').addEventListener('click', () => showAoNModal(12));
+document.getElementById('statAo50Box').addEventListener('click', () => showAoNModal(50));
+document.getElementById('statAo100Box').addEventListener('click', () => showAoNModal(100));
+
+// ---------- Competition Mode (Ao5): จำลองการแข่งขัน สุ่ม scramble 5 อันล่วงหน้า + จับเวลาแบบเต็มจอ ----------
+const COMP_TOTAL = 5;
+let competitionMode = false;
+let competitionScrambles = [];
+let competitionResults = [];
+let competitionIndex = 0;
+let competitionPrevInspection = null;
+let competitionEnteredFullscreen = false;
+
+const compHud = document.getElementById('competitionHud');
+const compProgressEl = document.getElementById('compProgress');
+const compDotsEl = document.getElementById('compDots');
+const compSummaryOverlay = document.getElementById('competitionSummaryOverlay');
+const compFullscreenNote = document.getElementById('compFullscreenNote');
+
+async function enterCompetitionFullscreen(){
+  competitionEnteredFullscreen = false;
+  compFullscreenNote.style.display = 'none';
+  const el = document.documentElement;
+  try{
+    if(el.requestFullscreen){
+      await el.requestFullscreen();
+      competitionEnteredFullscreen = true;
+    } else if(el.webkitRequestFullscreen){
+      await el.webkitRequestFullscreen();
+      competitionEnteredFullscreen = true;
+    }
+  }catch(err){
+    competitionEnteredFullscreen = false;
+  }
+  if(!competitionEnteredFullscreen){
+    compFullscreenNote.style.display = 'block';
+  }
+}
+
+function exitCompetitionFullscreen(){
+  if(document.fullscreenElement || document.webkitFullscreenElement){
+    if(document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+    else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+  }
+}
+
+function buildCompetitionDots(){
+  compDotsEl.innerHTML = '';
+  for(let i = 0; i < COMP_TOTAL; i++){
+    const dot = document.createElement('div');
+    dot.className = 'comp-dot';
+    if(i < competitionResults.length){
+      const r = competitionResults[i];
+      dot.classList.add('done');
+      if(r.dnf) dot.classList.add('dnf');
+      else if(r.penalty === 2) dot.classList.add('penalty');
+    } else if(i === competitionIndex){
+      dot.classList.add('current');
+    }
+    compDotsEl.appendChild(dot);
+  }
+}
+
+function updateCompetitionHud(){
+  if(!competitionMode) return;
+  const cur = Math.min(competitionIndex + 1, COMP_TOTAL);
+  compProgressEl.textContent = t('comp_progress', { cur: cur, total: COMP_TOTAL });
+  buildCompetitionDots();
+}
+
+function startCompetition(){
+  const type = getCurrentCubeType();
+  const gen = SCRAMBLERS[type] || SCRAMBLERS['3x3'];
+  competitionScrambles = [];
+  for(let i = 0; i < COMP_TOTAL; i++){
+    competitionScrambles.push(gen());
+  }
+  competitionResults = [];
+  competitionIndex = 0;
+  competitionMode = true;
+
+  // บังคับเปิด WCA Inspection ระหว่างแข่งขันเพื่อความสมจริง (คืนค่าเดิมตอนออกจากโหมด)
+  competitionPrevInspection = inspectionEnabled;
+  inspectionEnabled = true;
+
+  compSummaryOverlay.classList.remove('show');
+  document.body.classList.add('competition-mode');
+
+  currentScramble = competitionScrambles[0];
+  document.getElementById('scramble').textContent = currentScramble;
+  renderPuzzlePreview(type, currentScramble);
+  display.className = '';
+  display.textContent = formatTime(0);
+
+  updateCompetitionHud();
+  enterCompetitionFullscreen();
+}
+
+function recordCompetitionSolve(ms, isDnf, penalty){
+  competitionResults.push({
+    ms: isDnf ? 0 : ms,
+    dnf: isDnf,
+    penalty: penalty,
+    scramble: currentScramble
+  });
+  competitionIndex++;
+
+  if(competitionIndex >= COMP_TOTAL){
+    showCompetitionSummary();
+  } else {
+    currentScramble = competitionScrambles[competitionIndex];
+    document.getElementById('scramble').textContent = currentScramble;
+    renderPuzzlePreview(getCurrentCubeType(), currentScramble);
+    updateCompetitionHud();
+  }
+}
+
+function showCompetitionSummary(){
+  updateCompetitionHud();
+  const result = calcAoN(competitionResults, COMP_TOTAL);
+
+  const validSorted = competitionResults.filter(r => !r.dnf).slice().sort((a, b) => a.ms - b.ms);
+  const dnfCount = competitionResults.filter(r => r.dnf).length;
+  let excludeBestMs = null, excludeWorstMs = null;
+  if(dnfCount <= 1){
+    if(validSorted.length > 0) excludeBestMs = validSorted[0];
+    if(dnfCount === 0 && validSorted.length > 1) excludeWorstMs = validSorted[validSorted.length - 1];
+  }
+
+  document.getElementById('compSummaryResult').textContent = t('comp_result_label') + result;
+
+  let html = '';
+  competitionResults.forEach((r, i) => {
+    const isExcludedBest = (excludeBestMs !== null && r === excludeBestMs);
+    const isExcludedWorst = (excludeWorstMs !== null && r === excludeWorstMs);
+    const isExcludedDnf = (r.dnf && dnfCount <= 1);
+    const excluded = isExcludedBest || isExcludedWorst || isExcludedDnf;
+    const timeLabel = (r.dnf ? 'DNF' : formatTime(r.ms) + (r.penalty === 2 ? ' (+2)' : '')) + (excluded ? t('modal_excluded_tag') : '');
+    html += `<div class="modal-row ${excluded ? 'excluded' : ''}">
+      <div class="mr-top"><span>${t('comp_solve_row', { n: i + 1 })}</span><span>${timeLabel}</span></div>
+      <div class="mr-scramble">${escapeHtml(r.scramble || '-')}</div>
+    </div>`;
+  });
+  document.getElementById('compSummaryList').innerHTML = html;
+
+  compSummaryOverlay.classList.add('show');
+}
+
+function exitCompetitionMode(){
+  competitionMode = false;
+  document.body.classList.remove('competition-mode');
+  compSummaryOverlay.classList.remove('show');
+  if(competitionPrevInspection !== null){
+    inspectionEnabled = competitionPrevInspection;
+    insToggle.checked = inspectionEnabled;
+    competitionPrevInspection = null;
+  }
+  exitCompetitionFullscreen();
+  newScramble();
+  renderStats();
+  renderHistory();
+}
+
+document.getElementById('competitionBtn').addEventListener('click', startCompetition);
+document.getElementById('compExitBtn').addEventListener('click', exitCompetitionMode);
+document.getElementById('compExitBtn2').addEventListener('click', exitCompetitionMode);
+document.getElementById('compNewBtn').addEventListener('click', () => {
+  compSummaryOverlay.classList.remove('show');
+  startCompetition();
+});
+
+// ถ้าผู้ใช้กด Esc ออกจากโหมดเต็มจอเองระหว่างแข่งขัน ให้ซิงค์สถานะแอปให้ตรงกัน
+function handleFullscreenChange(){
+  const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+  if(!isFs && competitionMode){
+    if(state === 'running'){
+      stopTimer();
+    } else if(state === 'inspecting'){
+      stopInspection();
+      state = 'idle';
+    }
+    exitCompetitionMode();
+  }
+}
+document.addEventListener('fullscreenchange', handleFullscreenChange);
+document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
 
 function updateChart(){
   const curSess = sessionsData.sessions[sessionsData.currentId];
