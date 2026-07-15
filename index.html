@@ -548,6 +548,169 @@
     filter:drop-shadow(0 0 4px rgba(255,200,87,0.6));
   }
 
+  /* ---------- Reconstruction button + panel ---------- */
+  .recon-btn{
+    color:var(--muted);
+    cursor:pointer;
+    font-size:12px;
+  }
+  .recon-btn:hover{color:var(--accent);}
+  .recon-btn.active{color:var(--accent); font-weight:700;}
+  .time-row .row-recon{
+    display:none;
+    font-size:11px;
+    font-variant-numeric:normal;
+    color:var(--accent);
+    background:rgba(0,229,255,0.06);
+    border-left:2px solid var(--accent);
+    padding:6px 8px;
+    margin-top:6px;
+    border-radius:4px;
+    white-space:pre-wrap;
+    word-break:break-word;
+    letter-spacing:0.5px;
+  }
+  .time-row.expanded .row-recon{display:block;}
+  .recon-textarea{
+    width:100%;
+    min-height:120px;
+    background:var(--panel-solid);
+    color:var(--text);
+    border:1px solid rgba(167,139,250,0.35);
+    border-radius:8px;
+    padding:10px 12px;
+    font-family:'Consolas','Courier New',monospace;
+    font-size:14px;
+    letter-spacing:0.5px;
+    resize:vertical;
+  }
+  .recon-textarea:focus{outline:none; border-color:var(--accent);}
+
+  /* ---------- Streak stat highlight ---------- */
+  #statStreakBox.on-fire{
+    border-color:rgba(255,95,143,0.5);
+    box-shadow:0 0 18px rgba(255,95,143,0.25);
+  }
+  #statStreakBox.on-fire .value{color:var(--danger);}
+
+  /* ---------- Splash / loading screen ---------- */
+  #splashScreen{
+    position:fixed;
+    inset:0;
+    z-index:9999;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(167,139,250,0.25), transparent 60%),
+      radial-gradient(ellipse at top, #1b1035 0%, #05050f 60%),
+      #05050f;
+    transition:opacity .5s ease, visibility .5s ease;
+  }
+  #splashScreen.splash-hide{
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none;
+  }
+  .splash-content{text-align:center;}
+  .splash-cube{
+    font-size:64px;
+    animation:splashSpin 1.4s ease-in-out infinite;
+    filter:drop-shadow(0 0 18px rgba(0,229,255,0.5));
+  }
+  @keyframes splashSpin{
+    0%,100%{transform:rotate(0deg) scale(1);}
+    50%{transform:rotate(180deg) scale(1.15);}
+  }
+  .splash-title{
+    margin-top:16px;
+    font-size:20px;
+    font-weight:700;
+    letter-spacing:2px;
+    color:var(--text);
+    text-shadow:0 0 16px rgba(0,229,255,0.5);
+  }
+  .splash-sub{
+    margin-top:8px;
+    font-size:13px;
+    color:var(--muted);
+  }
+  .splash-spinner{
+    margin:20px auto 0;
+    width:34px;
+    height:34px;
+    border:3px solid rgba(167,139,250,0.25);
+    border-top-color:var(--accent);
+    border-radius:50%;
+    animation:splashRotate .8s linear infinite;
+  }
+  @keyframes splashRotate{to{transform:rotate(360deg);}}
+
+  /* ---------- PB Celebration ---------- */
+  #pbCelebration{
+    position:fixed;
+    inset:0;
+    z-index:300;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    opacity:0;
+    pointer-events:none;
+    overflow:hidden;
+    transition:opacity .3s ease;
+  }
+  #pbCelebration.show{opacity:1;}
+  .pb-banner{
+    position:relative;
+    z-index:2;
+    text-align:center;
+    background:rgba(10,6,26,0.55);
+    backdrop-filter:blur(4px);
+    padding:26px 40px;
+    border-radius:18px;
+    border:1px solid rgba(255,200,87,0.4);
+    box-shadow:0 0 40px rgba(255,200,87,0.25);
+    animation:pbPop .55s cubic-bezier(.34,1.56,.64,1);
+  }
+  .pb-emoji{font-size:56px; line-height:1;}
+  .pb-title{
+    font-size:26px;
+    font-weight:800;
+    color:var(--accent2);
+    text-shadow:0 0 20px rgba(255,200,87,0.8);
+    margin-top:6px;
+  }
+  .pb-sub{
+    font-size:15px;
+    color:var(--text);
+    margin-top:6px;
+  }
+  @keyframes pbPop{
+    0%{transform:scale(.4); opacity:0;}
+    60%{transform:scale(1.08); opacity:1;}
+    100%{transform:scale(1);}
+  }
+  .confetti-piece{
+    position:absolute;
+    top:-20px;
+    width:9px;
+    height:14px;
+    opacity:.9;
+    animation-name:confettiFall;
+    animation-timing-function:linear;
+    animation-fill-mode:forwards;
+  }
+  @keyframes confettiFall{
+    0%{transform:translateY(-20px) rotate(0deg); opacity:1;}
+    100%{transform:translateY(110vh) rotate(360deg); opacity:0;}
+  }
+  @media (max-width:480px){
+    .pb-banner{padding:20px 24px;}
+    .pb-emoji{font-size:44px;}
+    .pb-title{font-size:20px;}
+    .pb-sub{font-size:13px;}
+  }
+
   /* ---------- Competition Mode (Ao5) ---------- */
   #competitionEntry{
     margin: 4px 0 18px;
@@ -697,6 +860,17 @@
 </head>
 <body>
 
+<div id="splashScreen">
+  <div class="splash-content">
+    <div class="splash-cube">🧩</div>
+    <div class="splash-title" data-i18n="splash_app_title">RUBIK'S CUBE TIMER</div>
+    <div class="splash-sub" data-i18n="splash_loading_text">กำลังโหลด...</div>
+    <div class="splash-spinner"></div>
+  </div>
+</div>
+
+<div id="pbCelebration"></div>
+
 <h1>🪐 RUBIK'S CUBE TIMER — SPACE EDITION 🚀</h1>
 
 <div id="sessionBar">
@@ -770,6 +944,7 @@
 
 <div class="stats">
   <div class="stat-box" id="statBestBox" data-i18n-title="title_best" title="แตะเพื่อดูประวัติสถิติที่ดีที่สุด"><div class="label">Best</div><div class="value" id="statBest">-</div></div>
+  <div class="stat-box" id="statStreakBox" data-i18n-title="title_streak" title="จำนวนวันที่ฝึกซ้อมติดต่อกัน"><div class="label" data-i18n="streak_label">🔥 Streak</div><div class="value" id="statStreak">-</div></div>
   <div class="stat-box" id="statAo5Box" data-i18n-title="title_ao5" title="แตะเพื่อดูรายละเอียด Ao5"><div class="label">Ao5</div><div class="value" id="statAo5">-</div></div>
   <div class="stat-box" id="statAo12Box" data-i18n-title="title_ao12" title="แตะเพื่อดูรายละเอียด Ao12"><div class="label">Ao12</div><div class="value" id="statAo12">-</div></div>
   <div class="stat-box"><div class="label">Mean</div><div class="value" id="statMean">-</div></div>
@@ -914,6 +1089,18 @@ const translations = {
     comp_solve_row: "รอบที่ {n}",
     comp_new_btn: "🔄 แข่งใหม่ (Ao5 ใหม่)",
     comp_exit_btn: "ออกจากโหมด",
+    recon_btn_add: "📝 Reconstruction",
+    recon_btn_edit: "📝 แก้ Reconstruction",
+    recon_modal_title: "📝 Reconstruction",
+    recon_placeholder: "พิมพ์ solution / reconstruction ของคุณที่นี่ เช่น R U R' U' F R F'...",
+    recon_save_btn: "บันทึก",
+    recon_saved_label: "📝 Reconstruction:",
+    title_streak: "จำนวนวันที่ฝึกซ้อมติดต่อกัน ไม่ขาดแม้แต่วันเดียว",
+    streak_label: "🔥 Streak",
+    pb_celebration_title: "🎉 สถิติใหม่ส่วนตัว!",
+    pb_celebration_sub: "ทำเวลาได้ {time} วินาที เร็วกว่าที่เคยทำมาทั้งหมด!",
+    splash_loading_text: "กำลังโหลด...",
+    splash_app_title: "RUBIK'S CUBE TIMER",
   },
   en: {
     lang_label: "Language",
@@ -1001,6 +1188,18 @@ const translations = {
     comp_solve_row: "Solve #{n}",
     comp_new_btn: "🔄 New Ao5",
     comp_exit_btn: "Exit",
+    recon_btn_add: "📝 Reconstruction",
+    recon_btn_edit: "📝 Edit Reconstruction",
+    recon_modal_title: "📝 Reconstruction",
+    recon_placeholder: "Type your solution / reconstruction here, e.g. R U R' U' F R F'...",
+    recon_save_btn: "Save",
+    recon_saved_label: "📝 Reconstruction:",
+    title_streak: "Consecutive practice-day streak",
+    streak_label: "🔥 Streak",
+    pb_celebration_title: "🎉 New Personal Best!",
+    pb_celebration_sub: "You just solved it in {time} — your fastest ever!",
+    splash_loading_text: "Loading...",
+    splash_app_title: "RUBIK'S CUBE TIMER",
   },
   zh: {
     lang_label: "语言",
@@ -1088,6 +1287,18 @@ const translations = {
     comp_solve_row: "第 {n} 次",
     comp_new_btn: "🔄 开始新的 Ao5",
     comp_exit_btn: "退出",
+    recon_btn_add: "📝 还原步骤",
+    recon_btn_edit: "📝 编辑还原步骤",
+    recon_modal_title: "📝 还原步骤 (Reconstruction)",
+    recon_placeholder: "在此输入你的还原步骤，例如 R U R' U' F R F'...",
+    recon_save_btn: "保存",
+    recon_saved_label: "📝 还原步骤：",
+    title_streak: "连续练习天数",
+    streak_label: "🔥 连续天数",
+    pb_celebration_title: "🎉 创造个人最佳成绩！",
+    pb_celebration_sub: "用时 {time}，超越了你以往的所有成绩！",
+    splash_loading_text: "加载中...",
+    splash_app_title: "RUBIK'S CUBE TIMER",
   }
 };
 
@@ -1139,6 +1350,8 @@ function applyLanguage(lang){
   if(typeof competitionMode !== 'undefined' && competitionMode){
     updateCompetitionHud();
   }
+
+  if(typeof renderStreak === 'function') renderStreak();
 }
 
 document.getElementById('langSelect').addEventListener('change', (e) => {
@@ -1971,18 +2184,120 @@ function stopInspection(){
 function saveTime(ms, isDnf=false, penalty=0){
   const curSess = sessionsData.sessions[sessionsData.currentId];
   if(!curSess) return;
+
+  // เช็คสถิติที่ดีที่สุดเดิมก่อนบันทึกอันใหม่ เพื่อรู้ว่านี่คือ PB ใหม่หรือไม่
+  let prevBest = Infinity;
+  let hadPreviousValid = false;
+  curSess.times.forEach(r => {
+    if(!r.dnf){
+      hadPreviousValid = true;
+      if(r.ms < prevBest) prevBest = r.ms;
+    }
+  });
+
   curSess.times.unshift({
     id: Date.now(),
     ms: ms,
     dnf: isDnf,
     penalty: penalty, 
     scramble: currentScramble,
-    date: new Date().toLocaleString('th-TH')
+    date: new Date().toLocaleString('th-TH'),
+    reconstruction: ''
   });
   saveSessionsToStorage();
+  updateStreak();
   renderHistory();
   renderStats();
   speakTime(ms, isDnf, penalty);
+
+  if(!isDnf && hadPreviousValid && ms < prevBest){
+    celebratePB(ms);
+  }
+}
+
+// ---------- ระบบฉลอง PB (New Personal Best) ----------
+function celebratePB(ms){
+  const overlay = document.getElementById('pbCelebration');
+  if(!overlay) return;
+
+  overlay.innerHTML = '';
+
+  const colors = ['#00e5ff', '#ffc857', '#a78bfa', '#ff5f8f', '#7CFC00'];
+  for(let i = 0; i < 60; i++){
+    const conf = document.createElement('div');
+    conf.className = 'confetti-piece';
+    conf.style.left = (Math.random() * 100) + 'vw';
+    conf.style.background = colors[Math.floor(Math.random() * colors.length)];
+    conf.style.animationDelay = (Math.random() * 0.5) + 's';
+    conf.style.animationDuration = (1.8 + Math.random() * 1.4) + 's';
+    conf.style.transform = `rotate(${Math.random() * 360}deg)`;
+    overlay.appendChild(conf);
+  }
+
+  const banner = document.createElement('div');
+  banner.className = 'pb-banner';
+  banner.innerHTML = `
+    <div class="pb-emoji">🏆</div>
+    <div class="pb-title">${t('pb_celebration_title')}</div>
+    <div class="pb-sub">${t('pb_celebration_sub', { time: formatTime(ms) })}</div>
+  `;
+  overlay.appendChild(banner);
+
+  overlay.classList.add('show');
+  clearTimeout(overlay._pbHideTimeout);
+  overlay._pbHideTimeout = setTimeout(() => {
+    overlay.classList.remove('show');
+    setTimeout(() => { overlay.innerHTML = ''; }, 350);
+  }, 3000);
+}
+
+// ---------- ระบบ Streak วันซ้อม ----------
+let streakData = { lastDate: '', current: 0, longest: 0 };
+
+function dateStr(d){
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function loadStreak(){
+  const saved = localStorage.getItem('rubikTimerStreak');
+  if(saved){
+    try{ streakData = JSON.parse(saved); }
+    catch(e){ streakData = { lastDate: '', current: 0, longest: 0 }; }
+  }
+  const today = dateStr(new Date());
+  const yesterday = dateStr(new Date(Date.now() - 86400000));
+  // ถ้าไม่ได้ฝึกทั้งเมื่อวานและวันนี้ แปลว่า streak ขาดไปแล้ว ให้แสดงเป็น 0
+  if(streakData.lastDate && streakData.lastDate !== today && streakData.lastDate !== yesterday){
+    streakData.current = 0;
+  }
+  renderStreak();
+}
+
+function updateStreak(){
+  const today = dateStr(new Date());
+  if(streakData.lastDate === today){
+    renderStreak();
+    return; // วันนี้ฝึกไปแล้ว นับไปครั้งเดียวต่อวัน
+  }
+  const yesterday = dateStr(new Date(Date.now() - 86400000));
+  if(streakData.lastDate === yesterday){
+    streakData.current += 1;
+  } else {
+    streakData.current = 1;
+  }
+  streakData.lastDate = today;
+  if(streakData.current > streakData.longest) streakData.longest = streakData.current;
+  localStorage.setItem('rubikTimerStreak', JSON.stringify(streakData));
+  renderStreak();
+}
+
+function renderStreak(){
+  const box = document.getElementById('statStreak');
+  const wrap = document.getElementById('statStreakBox');
+  if(!box) return;
+  box.textContent = streakData.current > 0 ? (streakData.current + ' 🔥') : '-';
+  if(wrap) wrap.classList.toggle('on-fire', streakData.current >= 3);
+  if(wrap) wrap.title = t('title_streak') + (streakData.longest > 0 ? ` (Best: ${streakData.longest})` : '');
 }
 
 // ---------- ระบบควบคุมเริ่ม/หยุดจับเวลา: กดค้าง-เปลี่ยนสี-ปล่อยเพื่อเริ่ม / แตะครั้งเดียวเพื่อหยุด ----------
@@ -2210,10 +2525,12 @@ function renderHistory(){
         <div class="row-actions">
           <span class="pen-btn ${rec.penalty===2?'active':''}" onclick="event.stopPropagation(); togglePenalty(${index})">+2</span>
           <span class="dnf-btn ${rec.dnf?'active':''}" onclick="event.stopPropagation(); toggleDnf(${index})">DNF</span>
+          <span class="recon-btn ${rec.reconstruction?'active':''}" title="${escapeHtml(rec.reconstruction ? t('recon_btn_edit') : t('recon_btn_add'))}" onclick="event.stopPropagation(); openReconstructionModal(${index})">📝</span>
           <span class="del" onclick="event.stopPropagation(); deleteTime(${index})">🗑️</span>
         </div>
       </div>
       <div class="row-scramble">🧩 ${t('scramble_label')}: ${rec.scramble || '-'} (${rec.date || ''})</div>
+      ${rec.reconstruction ? `<div class="row-recon">${escapeHtml(rec.reconstruction)}</div>` : ''}
     `;
     
     row.addEventListener('click', () => {
@@ -2270,6 +2587,37 @@ function toggleDnf(index){
   saveSessionsToStorage();
   renderHistory();
   renderStats();
+}
+
+function openReconstructionModal(index){
+  const curSess = sessionsData.sessions[sessionsData.currentId];
+  if(!curSess || !curSess.times[index]) return;
+  const rec = curSess.times[index];
+
+  modalTitle.textContent = t('recon_modal_title');
+  modalBody.innerHTML = `
+    <div class="modal-summary">🧩 ${t('scramble_label')}: ${escapeHtml(rec.scramble || '-')}</div>
+    <textarea id="reconTextarea" class="recon-textarea" placeholder="${escapeHtml(t('recon_placeholder'))}">${escapeHtml(rec.reconstruction || '')}</textarea>
+    <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:14px;">
+      <button id="reconCancelBtn" class="action-btn">${t('modal_cancel')}</button>
+      <button id="reconSaveBtn" class="action-btn" style="border-color:var(--accent); color:var(--accent);">${t('recon_save_btn')}</button>
+    </div>
+  `;
+  statModalOverlay.classList.add('show');
+
+  document.getElementById('reconCancelBtn').addEventListener('click', closeModal, { once:true });
+  document.getElementById('reconSaveBtn').addEventListener('click', () => {
+    const val = document.getElementById('reconTextarea').value;
+    rec.reconstruction = val.trim();
+    saveSessionsToStorage();
+    closeModal();
+    renderHistory();
+  }, { once:true });
+
+  setTimeout(() => {
+    const ta = document.getElementById('reconTextarea');
+    if(ta) ta.focus();
+  }, 50);
 }
 
 document.getElementById('clearBtn').addEventListener('click', () => {
@@ -2828,9 +3176,19 @@ loadSessions();
 populateSessionSelect();
 syncCubeTypeSelect();
 loadUserPreferences(); 
+loadStreak();
 renderHistory();
 renderStats();
 newScramble();
+
+// ---------- ซ่อนหน้าโหลดเข้าแอพ (Splash Screen) หลังจากทุกอย่างพร้อมแล้ว ----------
+setTimeout(() => {
+  const splash = document.getElementById('splashScreen');
+  if(splash){
+    splash.classList.add('splash-hide');
+    setTimeout(() => splash.remove(), 650);
+  }
+}, 550);
 
 
 // ---------- PWA Implementation Setup ----------
